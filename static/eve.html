@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cipher-7441 // Eve Interception Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Share Tech Mono', monospace; background-color: #050505; color: #ff2a4d; overflow-x: hidden; }
+        .qb-font { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; }
+        .qb-panel-breach { background: #120508; border-left: 3px solid #ff2a4d; border-top: 1px solid rgba(255, 42, 77, 0.3); border-right: 1px solid rgba(255, 42, 77, 0.3); border-bottom: 1px solid rgba(255, 42, 77, 0.3); box-shadow: inset 0 0 15px rgba(255, 42, 77, 0.05); }
+        .breach-glow { text-shadow: 0 0 10px rgba(255, 42, 77, 0.8); }
+    </style>
+</head>
+<body class="min-h-screen p-6 max-w-[1600px] mx-auto flex flex-col justify-between">
+
+    <header class="flex justify-between items-center border-b border-rose-500/30 pb-4 mb-6">
+        <div>
+            <div class="text-[10px] text-rose-500/60 tracking-widest">CIPHER-7441 // NODE 03 // ADVERSARIAL MESH MASK</div>
+            <h1 class="text-3xl font-bold qb-font breach-glow text-rose-500">MULTI-HACKER MITM WIRETAP (EVE-1 & EVE-2)</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="px-3 py-1.5 text-xs font-bold qb-panel-breach text-rose-300">MESH: DUAL_ACTIVE</div>
+            <div class="px-4 py-1.5 text-xs font-bold qb-panel-breach text-rose-400 breach-glow">WIRETAP: ARMED</div>
+        </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        <div class="lg:col-span-4 space-y-6">
+            <div class="qb-panel-breach p-6 space-y-4">
+                <h2 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-2 qb-font">DUAL HACKER SAMPLING CONFIG</h2>
+                <div>
+                    <label class="block text-[10px] text-rose-400/70 mb-1">EVE-1 SAMPLING RATE: <span id="rate1-val" class="text-white font-bold">30%</span></label>
+                    <input type="range" id="rate1-slider" min="0" max="100" value="30" class="w-full accent-rose-500 bg-black cursor-pointer">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-rose-400/70 mb-1">EVE-2 SAMPLING RATE: <span id="rate2-val" class="text-white font-bold">0%</span></label>
+                    <input type="range" id="rate2-slider" min="0" max="100" value="0" class="w-full accent-rose-500 bg-black cursor-pointer">
+                </div>
+                <button onclick="injectAttack()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-black font-bold qb-font text-xs tracking-wider transition-all shadow-[0_0_20px_rgba(255,42,77,0.4)]">
+                    DEPLOY DUAL PROFILER PACKET INJECTION
+                </button>
+            </div>
+
+            <!-- Partial Key & Text Siphon HUD -->
+            <div class="qb-panel-breach p-5 space-y-3">
+                <h3 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-1 qb-font">PARTIAL TEXT SIPHON HUD</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-black p-2.5 border border-rose-500/20"><span class="block text-[9px] text-gray-400">BITS SIPHONED</span><span id="stolen-bits-count" class="font-bold text-rose-300">0 / 32</span></div>
+                    <div class="bg-black p-2.5 border border-rose-500/20"><span class="block text-[9px] text-gray-400">CAPTURE RATE</span><span id="recovery-pct" class="font-bold text-rose-300">0.0%</span></div>
+                </div>
+                <div>
+                    <span class="block text-[10px] text-rose-400/70 mb-1">PARTIALLY RECOVERED SECRET MESSAGE SLICE:</span>
+                    <div id="partial-text-box" class="bg-black p-3 border border-rose-500/40 text-rose-300 font-bold text-sm tracking-wide overflow-x-auto whitespace-nowrap min-h-[45px] flex items-center">
+                        [NO INTERCEPTION DATA]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8 space-y-6">
+            <div class="qb-panel-breach p-6 space-y-6">
+                <div class="flex justify-between items-center border-b border-rose-500/20 pb-2">
+                    <h3 class="text-xs font-bold text-rose-400 qb-font">LIVE INTERCEPTION QBER SPECTRUM</h3>
+                    <span class="text-[10px] text-rose-500/60 font-mono">STATUS: SCANNING</span>
+                </div>
+                <div class="bg-black/90 p-3 border border-rose-500/30 relative h-[380px]">
+                    <canvas id="eveGraph" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="qb-panel-breach p-5 mb-6 space-y-2">
+        <div class="flex justify-between items-center border-b border-rose-500/20 pb-1">
+            <h3 class="text-xs font-bold text-rose-400 qb-font">LIVE INTERCEPTION OBSERVATION TERMINAL</h3>
+            <span class="text-[9px] text-rose-500/70 font-mono">WIRETAP MONITOR</span>
+        </div>
+        <div id="humanTerminal" class="bg-black/90 p-3 h-36 overflow-y-auto font-mono text-xs text-rose-300/90 space-y-1 border border-rose-500/30">
+            <div class="text-gray-500">// Awaiting photon transit to monitor wiretap success rate...</div>
+        </div>
+    </div>
+
+
+    <script>
+        const slider1 = document.getElementById('rate1-slider');
+        const slider2 = document.getElementById('rate2-slider');
+        slider1.oninput = (e) => document.getElementById('rate1-val').innerText = e.target.value + '%';
+        slider2.oninput = (e) => document.getElementById('rate2-val').innerText = e.target.value + '%';
+
+        const ws = new WebSocket('ws://' + location.host + '/ws/mesh');
+
+        const canvas = document.getElementById('eveGraph');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { 
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * window.devicePixelRatio;
+            canvas.height = h * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.onresize = resizeCanvas; resizeCanvas();
+
+        function drawHighResEveGraph(dataPoints) {
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = 'rgba(255, 42, 77, 0.12)';
+            ctx.fillStyle = 'rgba(255, 42, 77, 0.8)';
+            ctx.font = '10px Share Tech Mono';
+            ctx.lineWidth = 1;
+
+            for (let yVal = 0; yVal <= 1.0; yVal += 0.2) {
+                let y = h - (yVal * (h - 35)) - 20;
+                ctx.beginPath(); ctx.moveTo(35, y); ctx.lineTo(w, y); ctx.stroke();
+                ctx.fillText(yVal.toFixed(1), 5, y + 4);
+            }
+
+            const step = (w - 45) / (dataPoints.length || 32);
+            dataPoints.forEach((_, idx) => {
+                if (idx % 4 === 0) {
+                    let x = 40 + idx * step;
+                    ctx.fillText(`#${idx+1}`, x - 8, h - 5);
+                }
+            });
+
+            ctx.strokeStyle = '#ff2a4d';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 8; ctx.shadowColor = '#ff2a4d';
+            ctx.beginPath();
+
+            dataPoints.forEach((val, idx) => {
+                let x = 40 + idx * step;
+                let y = h - (val * (h - 35)) - 20;
+                if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        drawHighResEveGraph(Array(32).fill(0.2));
+
+        function updatePartialTextHUD(logs) {
+            const interceptedLogs = logs.filter(p => p.eve1_intercepted || p.eve2_intercepted);
+            const total = logs.length;
+            const stolenCount = interceptedLogs.length;
+            const pct = ((stolenCount / total) * 100).toFixed(1);
+
+            document.getElementById('stolen-bits-count').innerText = `${stolenCount} / ${total}`;
+            document.getElementById('recovery-pct').innerText = `${pct}%`;
+
+            const fullSecret = "Monarch Protocol Omega Active";
+            let reconstructed = "";
+            
+            for (let i = 0; i < fullSecret.length; i++) {
+                if (i < logs.length) {
+                    const p = logs[i];
+                    if (p.eve1_intercepted || p.eve2_intercepted) {
+                        const guessedCorrectly = Math.random() < 0.5;
+                        reconstructed += guessedCorrectly ? fullSecret[i] : '•';
+                    } else {
+                        reconstructed += '_';
+                    }
+                } else {
+                    reconstructed += '_';
+                }
+            }
+
+            if (stolenCount === 0) {
+                document.getElementById('partial-text-box').innerText = "[NO BITS INTERCEPTED]";
+            } else {
+                document.getElementById('partial-text-box').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;
+            }
+        }
+
+        function appendObservationTerminal(logs) {
+            const humanTerm = document.getElementById('humanTerminal');
+            // Clean single header entry per sweep batch
+            humanTerm.innerHTML = `<div class="text-rose-400 font-bold mb-1">[WIRETAP SWEEP COMPLETE] Dual Hacker Interception Analyzed</div>`;
+            
+            logs.forEach(p => {
+                if (p.eve1_intercepted || p.eve2_intercepted) {
+                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted (${p.eve_action}). Siphoned bit successfully.</div>`;
+                } else {
+                    humanTerm.innerHTML += `<div class="text-gray-400">• Photon #${p.id}: Passed clean. Unseen by mesh.</div>`;
+                }
+            });
+            humanTerm.scrollTop = humanTerm.scrollHeight;
+        }
+
+        ws.onmessage = (event) => {
+            const packet = JSON.parse(event.data);
+            const data = packet.data;
+            if (data && data.photon_logs) {
+                let points = data.photon_logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.9 : 0.15);
+                drawHighResEveGraph(points);
+                updatePartialTextHUD(data.photon_logs);
+                appendObservationTerminal(data.photon_logs);
+            }
+        };
+
+        async function injectAttack() {
+            const r1 = parseFloat(slider1.value) / 100.0;
+            const r2 = parseFloat(slider2.value) / 100.0;
+            const res = await fetch('/api/transmit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ num_photons: 32, intercept_rate_eve1: r1, intercept_rate_eve2: r2, threshold: 0.11, message: "Monarch Protocol Omega Active" })
+            });
+            const data = await res.json();
+            ws.send(JSON.stringify({ type: 'EVE_ACTION', data: data }));
+        }
+    </script>
+</body>
+</html>

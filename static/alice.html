@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cipher-7441 // Alice Emitter Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Share Tech Mono', monospace; background-color: #050505; color: #f2a900; overflow-x: hidden; transition: background 0.3s; }
+        .qb-font { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; }
+        .qb-panel { background: #0a0a0c; border-left: 3px solid #f2a900; border-top: 1px solid rgba(242, 169, 0, 0.3); border-right: 1px solid rgba(242, 169, 0, 0.3); border-bottom: 1px solid rgba(242, 169, 0, 0.3); box-shadow: inset 0 0 15px rgba(242, 169, 0, 0.05); }
+        .qb-panel-panic { background: #1a0206 !important; border-left: 3px solid #ff2a4d !important; border-color: rgba(255, 42, 77, 0.6) !important; animation: pulsePanic 0.8s infinite alternate; }
+        @keyframes pulsePanic { 0% { box-shadow: inset 0 0 15px rgba(255,42,77,0.2); } 100% { box-shadow: inset 0 0 35px rgba(255,42,77,0.6); } }
+        .qb-glow { text-shadow: 0 0 10px rgba(242, 169, 0, 0.7); }
+        .panic-glow { text-shadow: 0 0 12px rgba(255, 42, 77, 0.9); color: #ff2a4d !important; }
+    </style>
+</head>
+<body id="body-root" class="min-h-screen p-6 max-w-[1600px] mx-auto flex flex-col justify-between">
+
+    <header id="main-header" class="flex justify-between items-center border-b border-amber-500/30 pb-4 mb-6 transition-colors">
+        <div>
+            <div id="sub-title" class="text-[10px] text-amber-500/60 tracking-widest">CIPHER-7441 // NODE 01 // EMITTER COMMAND</div>
+            <h1 id="main-title" class="text-3xl font-bold qb-font qb-glow text-amber-400">ALICE // OPTICAL LASER TRANSMITTER</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="px-3 py-1.5 text-xs font-bold qb-panel text-amber-300">WAVELENGTH: 1550nm</div>
+            <div id="sys-status" class="px-4 py-1.5 text-xs font-bold qb-panel text-amber-300 qb-glow">SYS: ONLINE</div>
+        </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        <div class="lg:col-span-4 space-y-6">
+            <div id="panel-config" class="qb-panel p-6 space-y-4">
+                <h2 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">TRANSMISSION PAYLOAD CONFIG</h2>
+                <div>
+                    <label class="block text-[10px] text-amber-400/70 mb-1">SECRET PAYLOAD MESSAGE:</label>
+                    <input type="text" id="msg" value="Monarch Protocol Omega Active" class="w-full bg-black border border-amber-500/40 p-3 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-amber-400/70 mb-1">PHOTON STREAM DENSITY: <span id="p-val" class="text-white font-bold">32</span></label>
+                    <input type="range" id="p-slider" min="16" max="64" step="16" value="32" class="w-full accent-amber-500 bg-black cursor-pointer">
+                </div>
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" id="cinematic-toggle" class="accent-amber-500 w-4 h-4 cursor-pointer">
+                    <label for="cinematic-toggle" class="text-xs text-amber-300 cursor-pointer">ENABLE CINEMATIC STEP ANIMATION</label>
+                </div>
+                <button id="transmit-btn" onclick="send()" class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold qb-font text-xs tracking-wider transition-all shadow-[0_0_20px_rgba(242,169,0,0.4)]">
+                    EXECUTE PHOTON STREAM LASER
+                </button>
+            </div>
+
+            <div class="qb-panel p-6 space-y-3">
+                <h3 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">QUANTUM SPIN POLARIZATION VISUALIZER</h3>
+                <div class="bg-black p-2 border border-amber-500/30 relative h-36 flex items-center justify-center">
+                    <canvas id="polarizationCanvas" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8 space-y-6">
+            <div class="qb-panel p-6 space-y-3">
+                <div class="flex justify-between items-center border-b border-amber-500/20 pb-2">
+                    <h3 class="text-xs font-bold text-amber-400 qb-font">LIVE FIBER OPTIC PHOTON PULSE STREAM</h3>
+                    <span id="laser-status" class="text-[10px] text-amber-500/60 font-mono">STANDBY</span>
+                </div>
+                <div class="bg-black p-2 border border-amber-500/30 relative h-28 flex items-center overflow-hidden">
+                    <canvas id="laserCanvas" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <div class="qb-panel p-6 space-y-3">
+                <div class="flex justify-between items-center border-b border-amber-500/20 pb-2">
+                    <h3 class="text-xs font-bold text-amber-400 qb-font">STATE AMPLITUDE OSCILLOSCOPE (|ψ|)</h3>
+                    <span class="text-[10px] text-amber-500/60 font-mono">HIGH-RES RENDER</span>
+                </div>
+                <div class="bg-black p-3 border border-amber-500/30 relative h-48">
+                    <canvas id="qbGraph" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="qb-panel p-5 mb-6 space-y-2">
+        <div class="flex justify-between items-center border-b border-amber-500/20 pb-1">
+            <h3 class="text-xs font-bold text-amber-400 qb-font">LIVE PHOTON EMISSION OBSERVATION TERMINAL</h3>
+            <span class="text-[9px] text-amber-500/70 font-mono">STREAM MONITOR</span>
+        </div>
+        <div id="humanTerminal" class="bg-black/90 p-3 h-36 overflow-y-auto font-mono text-xs text-amber-300/90 space-y-1 border border-amber-500/30">
+            <div class="text-gray-500">// Ready. Click "Execute Photon Stream Laser" to transmit photons...</div>
+        </div>
+    </div>
+
+    <script>
+        const slider = document.getElementById('p-slider');
+        slider.addEventListener('input', (e) => document.getElementById('p-val').innerText = e.target.value);
+
+        const ws = new WebSocket('ws://' + location.host + '/ws/mesh');
+
+        const pCanvas = document.getElementById('polarizationCanvas');
+        const pCtx = pCanvas.getContext('2d');
+        function resizePol() {
+            pCanvas.width = pCanvas.parentElement.clientWidth * window.devicePixelRatio;
+            pCanvas.height = pCanvas.parentElement.clientHeight * window.devicePixelRatio;
+            pCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.onresize = resizePol; resizePol();
+
+        function drawSpinVector(angleDeg) {
+            const w = pCanvas.parentElement.clientWidth;
+            const h = pCanvas.parentElement.clientHeight;
+            pCtx.clearRect(0, 0, w, h);
+            pCtx.strokeStyle = 'rgba(242, 169, 0, 0.2)';
+            pCtx.lineWidth = 1;
+            pCtx.beginPath(); pCtx.arc(w/2, h/2, 45, 0, Math.PI*2); pCtx.stroke();
+            pCtx.beginPath(); pCtx.moveTo(w/2, 10); pCtx.lineTo(w/2, h-10); pCtx.stroke();
+            pCtx.beginPath(); pCtx.moveTo(10, h/2); pCtx.lineTo(w-10, h/2); pCtx.stroke();
+
+            const rad = (angleDeg * Math.PI) / 180;
+            const vx = (w/2) + Math.cos(rad) * 45;
+            const vy = (h/2) + Math.sin(rad) * 45;
+
+            pCtx.strokeStyle = '#f2a900';
+            pCtx.lineWidth = 2.5;
+            pCtx.shadowBlur = 10; pCtx.shadowColor = '#f2a900';
+            pCtx.beginPath(); pCtx.moveTo(w/2, h/2); pCtx.lineTo(vx, vy); pCtx.stroke();
+            pCtx.shadowBlur = 0;
+
+            pCtx.fillStyle = '#f2a900';
+            pCtx.beginPath(); pCtx.arc(vx, vy, 4, 0, Math.PI*2); pCtx.fill();
+            pCtx.font = '10px Share Tech Mono';
+            pCtx.fillText(`Spin: ${angleDeg}°`, 10, 20);
+        }
+        drawSpinVector(45);
+
+        const lCanvas = document.getElementById('laserCanvas');
+        const lCtx = lCanvas.getContext('2d');
+        function resizeLaser() { 
+            lCanvas.width = lCanvas.parentElement.clientWidth * window.devicePixelRatio; 
+            lCanvas.height = lCanvas.parentElement.clientHeight * window.devicePixelRatio; 
+            lCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.onresize = () => { resizePol(); resizeLaser(); }; resizeLaser();
+
+        function triggerLaserAnimation(isCinematic, logs, callback) {
+            let time = 0;
+            const w = lCanvas.parentElement.clientWidth;
+            const h = lCanvas.parentElement.clientHeight;
+            const speed = isCinematic ? 2 : 8;
+            const limit = isCinematic ? 600 : 350;
+
+            function animate() {
+                lCtx.clearRect(0, 0, w, h);
+                lCtx.strokeStyle = 'rgba(242, 169, 0, 0.2)';
+                lCtx.lineWidth = 2;
+                lCtx.beginPath(); lCtx.moveTo(0, h / 2); lCtx.lineTo(w, h / 2); lCtx.stroke();
+
+                let count = isCinematic ? 6 : 14;
+                for (let i = 0; i < count; i++) {
+                    let x = (time + i * 50) % w;
+                    let isIntercepted = isCinematic && logs && logs[i] && (logs[i].eve1_intercepted || logs[i].eve2_intercepted);
+                    
+                    lCtx.fillStyle = isIntercepted ? '#ff2a4d' : '#f2a900';
+                    lCtx.shadowBlur = 12; lCtx.shadowColor = lCtx.fillStyle;
+                    lCtx.beginPath(); lCtx.arc(x, h / 2, isIntercepted ? 6 : 4.5, 0, Math.PI * 2); lCtx.fill();
+                }
+                time += speed;
+                if (time < limit) {
+                    requestAnimationFrame(animate);
+                } else {
+                    lCtx.clearRect(0, 0, w, h);
+                    if (callback) callback();
+                }
+            }
+            animate();
+        }
+
+        const canvas = document.getElementById('qbGraph');
+        const ctx = canvas.getContext('2d');
+        function resizeGraph() { 
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * window.devicePixelRatio;
+            canvas.height = h * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.onresize = resizeGraph; resizeGraph();
+
+        function drawHighResGraph(dataPoints) {
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = 'rgba(242, 169, 0, 0.12)';
+            ctx.fillStyle = 'rgba(242, 169, 0, 0.8)';
+            ctx.font = '10px Share Tech Mono';
+            ctx.lineWidth = 1;
+
+            for (let yVal = 0; yVal <= 1.0; yVal += 0.25) {
+                let y = h - (yVal * (h - 35)) - 20;
+                ctx.beginPath(); ctx.moveTo(35, y); ctx.lineTo(w, y); ctx.stroke();
+                ctx.fillText(yVal.toFixed(2), 5, y + 4);
+            }
+
+            const step = (w - 45) / (dataPoints.length || 32);
+            dataPoints.forEach((_, idx) => {
+                if (idx % 4 === 0) {
+                    let x = 40 + idx * step;
+                    ctx.fillText(`#${idx+1}`, x - 8, h - 5);
+                }
+            });
+
+            ctx.strokeStyle = '#f2a900';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 8; ctx.shadowColor = '#f2a900';
+            ctx.beginPath();
+
+            dataPoints.forEach((val, idx) => {
+                let x = 40 + idx * step;
+                let y = h - (val * (h - 35)) - 20;
+                if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        drawHighResGraph(Array(32).fill(0.5));
+
+        function displayHumanTerminal(logs, keyHash) {
+            const term = document.getElementById('humanTerminal');
+            term.innerHTML = `<div class="text-amber-400 font-bold mb-1">[EMISSION SUCCESS] Derived Key Hash: ${keyHash}</div>`;
+            logs.forEach(p => {
+                let colorClass = p.error ? "text-rose-400" : "text-amber-300";
+                term.innerHTML += `<div class="${colorClass}">• Photon #${p.id}: Bit ${p.alice_bit} sent in [${p.alice_basis}-basis | ${p.polarization}] -> Eve Intercepted: ${p.eve1_intercepted || p.eve2_intercepted ? 'YES' : 'NO'}</div>`;
+            });
+            term.scrollTop = term.scrollHeight;
+        }
+
+        ws.onmessage = (event) => {
+            const packet = JSON.parse(event.data);
+            if (packet.type === 'PANIC_TRIGGER') {
+                document.getElementById('body-root').style.backgroundColor = '#150204';
+                document.getElementById('main-header').className = "flex justify-between items-center border-b border-rose-500/50 pb-4 mb-6 transition-colors";
+                document.getElementById('sub-title').className = "text-[10px] text-rose-500/80 tracking-widest";
+                document.getElementById('main-title').className = "text-3xl font-bold qb-font panic-glow text-rose-500";
+                document.getElementById('sys-status').className = "px-4 py-1.5 text-xs font-bold qb-panel-panic text-rose-400 panic-glow";
+                document.getElementById('sys-status').innerText = "ALERT: BREACH LOCKDOWN";
+                document.getElementById('panel-config').className = "qb-panel-panic p-6 space-y-4";
+            }
+        };
+
+        async function send() {
+            const isCinematic = document.getElementById('cinematic-toggle').checked;
+            document.getElementById('laser-status').innerText = isCinematic ? "CINEMATIC STEP-THROUGH ACTIVE..." : "EMITTING PHOTON STREAM...";
+            const numPhotons = parseInt(slider.value);
+
+            // Pre-fetch transmission to know photon behavior for cinematic pulse
+            const res = await fetch('/api/transmit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ num_photons: numPhotons, intercept_rate_eve1: 0.3, intercept_rate_eve2: 0.0, threshold: 0.11, message: document.getElementById('msg').value })
+            });
+            const data = await res.json();
+
+            triggerLaserAnimation(isCinematic, data.photon_logs, () => {
+                drawSpinVector(Math.random() > 0.5 ? 0 : 45);
+                ws.send(JSON.stringify({ type: 'ALICE_EMIT', data: data }));
+
+                let points = data.photon_logs.map(p => p.error ? 0.9 : 0.35 + Math.random() * 0.2);
+                drawHighResGraph(points);
+                displayHumanTerminal(data.photon_logs, data.derived_key);
+                document.getElementById('laser-status').innerText = "COMPLETE";
+                
+                if (!data.secure) {
+                    ws.send(JSON.stringify({ type: 'PANIC_TRIGGER' }));
+                }
+            });
+        }
+    </script>
+</body>
+</html>
