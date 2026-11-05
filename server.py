@@ -39,12 +39,14 @@ class TransmissionRequest(BaseModel):
 
 @app.websocket("/ws/mesh")
 async def websocket_endpoint(ws: WebSocket):
+    print("[DEBUG] Incoming WebSocket connection request to /ws/mesh")
     await manager.connect(ws)
     try:
         while True:
             data = await ws.receive_text()
             await manager.broadcast(data)
     except WebSocketDisconnect:
+        print("[DEBUG] WebSocket disconnected")
         manager.disconnect(ws)
 
 @app.post("/api/transmit")
