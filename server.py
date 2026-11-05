@@ -14,11 +14,19 @@ app.add_middleware(
 )
 
 class ConnectionManager:
-    def __init__(self): self.connections: list[WebSocket] = []
-    async def connect(self, ws: WebSocket): await ws.accept(); self.connections.append(ws)
-    def disconnect(self, ws: WebSocket): self.connections.remove(ws)
+    def __init__(self):
+        self.connections: list[WebSocket] = []
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self.connections.append(ws)
+
+    def disconnect(self, ws: WebSocket):
+        self.connections.remove(ws)
+
     async def broadcast(self, msg: str):
-        for conn in self.connections: await conn.send_text(msg)
+        for conn in self.connections:
+            await conn.send_text(msg)
 
 manager = ConnectionManager()
 
@@ -57,10 +65,8 @@ def transmit(req: TransmissionRequest):
         res["plaintext"] = None
     return res
 
-# Root endpoint loads your tactical index.html boot launcher automatically
 @app.get("/")
 def read_root():
     return FileResponse(os.path.join("static", "index.html"))
 
-# Mount static folder so /static/alice.html, etc. work seamlessly
 app.mount("/static", StaticFiles(directory="static"), name="static")
