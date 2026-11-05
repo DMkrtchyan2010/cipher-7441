@@ -94,7 +94,8 @@
         const slider = document.getElementById('p-slider');
         slider.addEventListener('input', (e) => document.getElementById('p-val').innerText = e.target.value);
 
-        const ws = new WebSocket('ws://' + location.host + '/ws/mesh');
+        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const ws = new WebSocket(proto + location.host + '/ws/mesh');
 
         const pCanvas = document.getElementById('polarizationCanvas');
         const pCtx = pCanvas.getContext('2d');
