@@ -88,7 +88,8 @@
         slider1.oninput = (e) => document.getElementById('rate1-val').innerText = e.target.value + '%';
         slider2.oninput = (e) => document.getElementById('rate2-val').innerText = e.target.value + '%';
 
-        const ws = new WebSocket('ws://' + location.host + '/ws/mesh');
+        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const ws = new WebSocket(proto + location.host + '/ws/mesh');
 
         const canvas = document.getElementById('eveGraph');
         const ctx = canvas.getContext('2d');
