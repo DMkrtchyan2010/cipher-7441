@@ -3,16 +3,15 @@ import logging
 import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from engine import run_bb84_simulation
 
-# Configure logging to print debug info directly to Render console
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Cipher-7441 Interactive Mesh", version="2.4.0")
+app = FastAPI(title="Cipher-7441 Interactive Mesh", version="2.5.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,21 +30,19 @@ class ConnectionManager:
   async def connect(self, ws: WebSocket):
     await ws.accept()
     self.connections.append(ws)
-    logger.info(f"Client connected. Active connections: {len(self.connections)}")
+    logger.info(f"Client connected. Total active: {len(self.connections)}")
 
   def disconnect(self, ws: WebSocket):
     if ws in self.connections:
       self.connections.remove(ws)
-      logger.info(
-          f"Client disconnected. Active connections: {len(self.connections)}"
-      )
+      logger.info(f"Client disconnected. Total active: {len(self.connections)}")
 
   async def broadcast(self, msg: str):
     for conn in self.connections:
       try:
         await conn.send_text(msg)
       except Exception as e:
-        logger.error(f"Error broadcasting to client: {e}")
+        logger.error(f"Broadcast error: {e}")
 
 
 manager = ConnectionManager()
@@ -59,11 +56,11 @@ class TransmissionRequest(BaseModel):
   message: str = ""
 
 
-# Handle both with and without trailing slash to prevent proxy 404s
+# WebSocket Endpoint supporting exact paths and trailing slashes
 @app.websocket("/ws/mesh")
 @app.websocket("/ws/mesh/")
 async def websocket_endpoint(ws: WebSocket):
-  logger.info("WebSocket handshake request received for /ws/mesh")
+  logger.info("Incoming WebSocket connection handshake at /ws/mesh")
   await manager.connect(ws)
   try:
     while True:
@@ -73,14 +70,8 @@ async def websocket_endpoint(ws: WebSocket):
     logger.info("WebSocket client disconnected normally")
     manager.disconnect(ws)
   except Exception as e:
-    logger.error(f"WebSocket error: {e}")
+    logger.error(f"WebSocket exception: {e}")
     manager.disconnect(ws)
-
-
-@app.get("/health")
-def health_check():
-  # Use this endpoint to verify active routes on Render
-  return {"status": "online", "routes": [route.path for route in app.routes]}
 
 
 @app.post("/api/transmit")
@@ -109,4 +100,21 @@ def read_root():
   return FileResponse(os.path.join("static", "index.html"))
 
 
+# Explicit route helpers for individual node views if accessed directly
+@app.get("/alice.html")
+def read_alice():
+  return FileResponse(os.path.join("static", "alice.html"))
+
+
+@app.get("/bob.html")
+def read_bob():
+  return FileResponse(os.path.join("static", "bob.html"))
+
+
+@app.get("/eve.html")
+def read_eve():
+  return FileResponse(os.path.join("static", "eve.html"))
+
+
+# Mount static assets LAST so explicit API/WebSocket routes take priority
 app.mount("/static", StaticFiles(directory="static"), name="static")
