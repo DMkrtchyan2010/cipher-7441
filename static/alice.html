@@ -34,7 +34,7 @@
                 <h2 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">TRANSMISSION PAYLOAD CONFIG</h2>
                 <div>
                     <label class="block text-[10px] text-amber-400/70 mb-1">SECRET PAYLOAD MESSAGE:</label>
-                    <input type="text" id="msg" value="Monarch Protocol Omega Active" autocomplete="off" class="w-full bg-black border border-amber-500/40 p-3 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
+                    <input type="text" id="msg" value="Monarch Protocol Omega Active" class="w-full bg-black border border-amber-500/40 p-3 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
                 </div>
                 <div>
                     <label class="block text-[10px] text-amber-400/70 mb-1">PHOTON STREAM DENSITY: <span id="p-val" class="text-white font-bold">128</span></label>
@@ -230,7 +230,7 @@
             term.innerHTML = `<div class="text-amber-400 font-bold mb-1">[EMISSION SUCCESS] Derived Key Hash: ${keyHash}</div>`;
             logs.forEach(p => {
                 let colorClass = p.error ? "text-rose-400" : "text-amber-300";
-                term.innerHTML += `<div class="${colorClass}">• Photon #${p.id}: Bit ${p.alice_bit} sent in [${p.alice_basis} | ${p.polarization}] -> Eve Intercepted: ${p.eve1_intercepted || p.eve2_intercepted ? 'YES' : 'NO'}</div>`;
+                term.innerHTML += `<div class="${colorClass}">• Photon #${p.id}: Bit ${p.alice_bit} sent in [${p.alice_basis}-basis | ${p.polarization}] -> Eve Intercepted: ${p.eve1_intercepted || p.eve2_intercepted ? 'YES' : 'NO'}</div>`;
             });
             term.scrollTop = term.scrollHeight;
         }
@@ -256,11 +256,7 @@
             const res = await fetch('/api/transmit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    num_photons: numPhotons, 
-                    threshold: 0.11, 
-                    message: document.getElementById('msg').value 
-                })
+                body: JSON.stringify({ num_photons: numPhotons, intercept_rate_eve1: 0.0, intercept_rate_eve2: 0.0, threshold: 0.11, message: document.getElementById('msg').value })
             });
             const data = await res.json();
 
