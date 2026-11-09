@@ -2,87 +2,138 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Cipher-7441 // Bob Receiver Terminal</title>
+    <title>Cipher-7441 // Eve Siphon Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Share Tech Mono', monospace; background-color: #02080d; color: #00f0ff; overflow-x: hidden; transition: background 0.3s; }
+        body { font-family: 'Share Tech Mono', monospace; background-color: #0d0204; color: #ff2a4d; overflow-x: hidden; transition: background 0.3s; }
         .qb-font { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; }
-        .qb-panel { background: #02121a; border-left: 3px solid #00f0ff; border-top: 1px solid rgba(0, 240, 255, 0.3); border-right: 1px solid rgba(0, 240, 255, 0.3); border-bottom: 1px solid rgba(0, 240, 255, 0.3); box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.08); }
-        .qb-panel-panic { background: #1a0206 !important; border-left: 3px solid #ff2a4d !important; border-color: rgba(255, 42, 77, 0.6) !important; animation: pulsePanic 0.8s infinite alternate; }
-        @keyframes pulsePanic { 0% { box-shadow: inset 0 0 15px rgba(255,42,77,0.2); } 100% { box-shadow: inset 0 0 35px rgba(255,42,77,0.6); } }
-        .qb-glow { text-shadow: 0 0 10px rgba(0, 240, 255, 0.8); }
-        .panic-glow { text-shadow: 0 0 12px rgba(255, 42, 77, 0.9); color: #ff2a4d !important; }
+        .qb-panel { background: #150204; border-left: 3px solid #ff2a4d; border-top: 1px solid rgba(255, 42, 77, 0.3); border-right: 1px solid rgba(255, 42, 77, 0.3); border-bottom: 1px solid rgba(255, 42, 77, 0.3); box-shadow: inset 0 0 15px rgba(255, 42, 77, 0.08); }
+        .qb-glow { text-shadow: 0 0 10px rgba(255, 42, 77, 0.8); }
     </style>
 </head>
 <body id="body-root" class="min-h-screen p-6 max-w-[1600px] mx-auto flex flex-col justify-between">
 
-    <header id="main-header" class="flex justify-between items-center border-b border-cyan-500/30 pb-4 mb-6 transition-colors">
+    <header class="flex justify-between items-center border-b border-rose-500/30 pb-4 mb-6">
         <div>
-            <div id="sub-title" class="text-[10px] text-cyan-500/60 tracking-widest">CIPHER-7441 // NODE 02 // RECEIVER COMMAND</div>
-            <h1 id="main-title" class="text-3xl font-bold qb-font qb-glow text-cyan-400">BOB // DECRYPTION & SIFTING TERMINAL</h1>
+            <div class="text-[10px] text-rose-500/60 tracking-widest">CIPHER-7441 // NODE 03 // EAVESDROPPER INTERCEPT</div>
+            <h1 class="text-3xl font-bold qb-font qb-glow text-rose-500">EVE // QUANTUM SIPHON MONITOR</h1>
         </div>
         <div class="flex items-center space-x-3">
-            <div class="px-3 py-1.5 text-xs font-bold qb-panel text-cyan-300">THRESHOLD: 11% MAX</div>
-            <div id="sys-status" class="px-4 py-1.5 text-xs font-bold qb-panel text-cyan-300 qb-glow">SYS: ONLINE</div>
+            <div class="px-3 py-1.5 text-xs font-bold qb-panel text-rose-300">INTERCEPT PROBE: ACTIVE</div>
+            <div id="sys-status" class="px-4 py-1.5 text-xs font-bold qb-panel text-rose-300 qb-glow">SIPHON: STANDBY</div>
         </div>
     </header>
 
     <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
         <div class="lg:col-span-4 space-y-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="qb-panel p-4">
-                    <div class="text-[10px] text-cyan-400/70 mb-1">SIFTED MATCHES</div>
-                    <div id="sifted-matches" class="text-lg font-bold text-cyan-200">0 / 0</div>
+            <div class="qb-panel p-6 space-y-4">
+                <h2 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-2 qb-font">SIPHON INTERCEPTION CONTROLS</h2>
+                <div>
+                    <label class="block text-[10px] text-rose-400/70 mb-1">EVE INTERCEPT RATE (NODE 1): <span id="e1-val" class="text-white font-bold">0.30</span></label>
+                    <input type="range" id="e1-slider" min="0.0" max="1.0" step="0.05" value="0.30" class="w-full accent-rose-500 bg-black cursor-pointer">
                 </div>
-                <div class="qb-panel p-4">
-                    <div class="text-[10px] text-cyan-400/70 mb-1">QBER RATE</div>
-                    <div id="qber-rate" class="text-lg font-bold text-cyan-200">0.0%</div>
+                <div>
+                    <label class="block text-[10px] text-rose-400/70 mb-1">EVE INTERCEPT RATE (NODE 2): <span id="e2-val" class="text-white font-bold">0.00</span></label>
+                    <input type="range" id="e2-slider" min="0.0" max="1.0" step="0.05" value="0.00" class="w-full accent-rose-500 bg-black cursor-pointer">
+                </div>
+                <button onclick="injectAttack()" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-black font-bold qb-font text-xs tracking-wider transition-all shadow-[0_0_15px_rgba(255,42,77,0.4)]">
+                    EXECUTE ACTIVE PHOTON PROBE
+                </button>
+                <div class="text-[11px] text-rose-300/80 bg-black/40 p-3 border border-rose-500/20">
+                    // Note: Interception collapses photon superposition states, driving up QBER and triggering network breach alerts if threshold (11%) is breached.
                 </div>
             </div>
 
             <div class="qb-panel p-6 space-y-3">
-                <h3 class="text-xs font-bold text-cyan-400 border-b border-cyan-500/20 pb-2 qb-font">DECRYPTED MESSAGE PAYLOAD</h3>
-                <div id="decrypted-payload" class="font-mono text-xs text-cyan-200 bg-cyan-950/20 p-4 border border-cyan-500/40 min-h-[60px] break-all">
-                    [WAITING FOR TRANSMISSION...]
-                </div>
-            </div>
-
-            <div class="qb-panel p-6 space-y-2">
-                <h3 class="text-xs font-bold text-cyan-400 border-b border-cyan-500/20 pb-2 qb-font">RECEIVER OPTICS</h3>
-                <div class="text-[11px] text-cyan-300/80 space-y-1">
-                    <div>BEAMSPLITTER: <span class="text-white">50/50 PASSIVE</span></div>
-                    <div>DETECTOR EFF: <span class="text-white">85% SPAD</span></div>
-                    <div>ERROR THRESHOLD: <span class="text-white">11.0%</span></div>
+                <h3 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-2 qb-font">SIPHONED BIT FREQUENCY SPECTRUM</h3>
+                <div class="bg-black p-2 border border-rose-500/30 relative h-36 flex items-center justify-center">
+                    <canvas id="siphonCanvas" class="w-full h-full"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-8 space-y-6">
             <div class="qb-panel p-6 space-y-3">
-                <div class="flex justify-between items-center border-b border-cyan-500/20 pb-2">
-                    <h3 class="text-xs font-bold text-cyan-400 qb-font">QBER ERROR MONITOR VS 11% THRESHOLD</h3>
-                    <span class="text-[10px] text-cyan-500/60 font-mono">HIGH-RES SPECTRUM (%)</span>
+                <div class="flex justify-between items-center border-b border-rose-500/20 pb-2">
+                    <h3 class="text-xs font-bold text-rose-400 qb-font">PARTIAL TEXT SIPHON HUD</h3>
+                    <span id="capture-status" class="text-[10px] text-rose-500/60 font-mono">LISTENING FOR TRANSMISSION...</span>
                 </div>
-                <div class="bg-black p-3 border border-cyan-500/30 relative h-60">
-                    <canvas id="bobGraph" class="w-full h-full"></canvas>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-black p-4 border border-rose-500/30">
+                        <div class="text-[10px] text-rose-500/70 mb-1">BITS SIPHONED</div>
+                        <div id="bits-siphoned" class="text-xl font-bold text-rose-300">0 / 128</div>
+                    </div>
+                    <div class="bg-black p-4 border border-rose-500/30">
+                        <div class="text-[10px] text-rose-500/70 mb-1">CAPTURE RATE</div>
+                        <div id="capture-rate" class="text-xl font-bold text-rose-300">0.0%</div>
+                    </div>
+                </div>
+                <div class="bg-black p-4 border border-rose-500/30 space-y-2">
+                    <div class="text-[10px] text-rose-500/70">PARTIALLY RECOVERED SECRET MESSAGE SLICE:</div>
+                    <div id="eve-message-display" class="font-mono text-sm text-rose-300 tracking-widest bg-rose-950/20 p-3 border border-rose-500/40">
+                        "________________________________________" (Waiting for Stream)
+                    </div>
+                </div>
+            </div>
+
+            <div class="qb-panel p-6 space-y-3">
+                <div class="flex justify-between items-center border-b border-rose-500/20 pb-2">
+                    <h3 class="text-xs font-bold text-rose-400 qb-font">QUANTUM ERROR DISTORTION OSCILLOSCOPE</h3>
+                    <span class="text-[10px] text-rose-500/60 font-mono">LIVE QBER INTRUSION</span>
+                </div>
+                <div class="bg-black p-3 border border-rose-500/30 relative h-48">
+                    <canvas id="eveGraph" class="w-full h-full"></canvas>
                 </div>
             </div>
         </div>
     </main>
 
     <div class="qb-panel p-5 mb-6 space-y-2">
-        <div class="flex justify-between items-center border-b border-cyan-500/20 pb-1">
-            <h3 class="text-xs font-bold text-cyan-400 qb-font">LIVE RECEPTION & SIFTING OBSERVATION TERMINAL</h3>
-            <span class="text-[9px] text-cyan-500/70 font-mono">RECEIVER MONITOR</span>
+        <div class="flex justify-between items-center border-b border-rose-500/20 pb-1">
+            <h3 class="text-xs font-bold text-rose-400 qb-font">INTERCEPT LOG TERMINAL</h3>
+            <span class="text-[9px] text-rose-500/70 font-mono">SNIFFER STREAM</span>
         </div>
-        <div id="bobTerminal" class="bg-black/90 p-3 h-40 overflow-y-auto font-mono text-xs text-cyan-300/90 space-y-1 border border-cyan-500/30">
-            <div class="text-gray-500">// Receiver listening on optical fiber mesh...</div>
+        <div id="eveTerminal" class="bg-black/90 p-3 h-36 overflow-y-auto font-mono text-xs text-rose-300/90 space-y-1 border border-rose-500/30">
+            <div class="text-gray-500">// Eve Intercept Node active. Monitoring optical mesh channels...</div>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('bobGraph');
+        const e1Slider = document.getElementById('e1-slider');
+        const e2Slider = document.getElementById('e2-slider');
+        e1Slider.addEventListener('input', (e) => document.getElementById('e1-val').innerText = parseFloat(e.target.value).toFixed(2));
+        e2Slider.addEventListener('input', (e) => document.getElementById('e2-val').innerText = parseFloat(e.target.value).toFixed(2));
+
+        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const ws = new WebSocket(proto + location.host + '/ws/mesh');
+
+        const sCanvas = document.getElementById('siphonCanvas');
+        const sCtx = sCanvas.getContext('2d');
+        function resizeSiphon() {
+            sCanvas.width = sCanvas.parentElement.clientWidth * window.devicePixelRatio;
+            sCanvas.height = sCanvas.parentElement.clientHeight * window.devicePixelRatio;
+            sCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.onresize = resizeSiphon; resizeSiphon();
+
+        function drawSiphonVisual(rate) {
+            const w = sCanvas.parentElement.clientWidth;
+            const h = sCanvas.parentElement.clientHeight;
+            sCtx.clearRect(0, 0, w, h);
+            sCtx.strokeStyle = 'rgba(255, 42, 77, 0.2)';
+            sCtx.lineWidth = 1;
+            sCtx.beginPath(); sCtx.arc(w/2, h/2, 45, 0, Math.PI*2); sCtx.stroke();
+
+            sCtx.fillStyle = '#ff2a4d';
+            sCtx.shadowBlur = 10; sCtx.shadowColor = '#ff2a4d';
+            let barWidth = w * 0.8 * rate;
+            sCtx.fillRect(w/2 - barWidth/2, h/2 - 6, barWidth, 12);
+            sCtx.shadowBlur = 0;
+        }
+        drawSiphonVisual(0.3);
+
+        const canvas = document.getElementById('eveGraph');
         const ctx = canvas.getContext('2d');
         function resizeGraph() {
             const w = canvas.parentElement.clientWidth;
@@ -93,92 +144,81 @@
         }
         window.onresize = resizeGraph; resizeGraph();
 
-        function drawBobGraph(qberVal) {
+        function drawEveGraph(points) {
             const w = canvas.parentElement.clientWidth;
             const h = canvas.parentElement.clientHeight;
             ctx.clearRect(0, 0, w, h);
-            
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.1)';
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
+            ctx.strokeStyle = 'rgba(255, 42, 77, 0.15)';
+            ctx.fillStyle = 'rgba(255, 42, 77, 0.8)';
             ctx.font = '10px Share Tech Mono';
             ctx.lineWidth = 1;
 
-            for (let yVal = 0.0; yVal <= 0.5; yVal += 0.1) {
-                let y = h - (yVal * 2 * (h - 35)) - 20;
+            for (let yVal = 0; yVal <= 1.0; yVal += 0.25) {
+                let y = h - (yVal * (h - 35)) - 20;
                 ctx.beginPath(); ctx.moveTo(35, y); ctx.lineTo(w, y); ctx.stroke();
-                ctx.fillText(`${(yVal * 100).toFixed(0)}%`, 5, y + 4);
+                ctx.fillText(yVal.toFixed(2), 5, y + 4);
             }
 
-            // Draw 11% threshold limit line
-            let limitY = h - (0.11 * 2 * (h - 35)) - 20;
+            const step = (w - 45) / (points.length || 32);
             ctx.strokeStyle = '#ff2a4d';
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath(); ctx.moveTo(35, limitY); ctx.lineTo(w, limitY); ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.fillStyle = '#ff2a4d';
-            ctx.fillText("LIMIT 11%", w - 60, limitY - 5);
-
-            // Draw active QBER line
-            ctx.strokeStyle = '#00f0ff';
             ctx.lineWidth = 2;
-            ctx.shadowBlur = 8; ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = 8; ctx.shadowColor = '#ff2a4d';
             ctx.beginPath();
-            
-            let currentY = h - (qberVal * 2 * (h - 35)) - 20;
-            ctx.moveTo(35, currentY);
-            ctx.lineTo(w, currentY);
+
+            points.forEach((val, idx) => {
+                let x = 40 + idx * step;
+                let y = h - (val * (h - 35)) - 20;
+                if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
             ctx.stroke();
             ctx.shadowBlur = 0;
         }
 
-        drawBobGraph(0.05);
+        drawEveGraph(Array(64).fill(0.1));
 
-        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const ws = new WebSocket(proto + location.host + '/ws/mesh');
+        function injectAttack() {
+            const r1 = parseFloat(e1Slider.value);
+            const r2 = parseFloat(e2Slider.value);
+            ws.send(JSON.stringify({ type: 'EVE_PROBE', intercept_rate_eve1: r1, intercept_rate_eve2: r2 }));
+            
+            const term = document.getElementById('eveTerminal');
+            term.innerHTML += `<div class="text-rose-400">[PROBE INJECTED] Intercept rates updated -> Node 1: ${(r1*100).toFixed(0)}%, Node 2: ${(r2*100).toFixed(0)}%</div>`;
+            term.scrollTop = term.scrollHeight;
+            document.getElementById('capture-status').innerText = "PROBE ACTIVE // SNIFFING...";
+        }
 
         ws.onmessage = (event) => {
             const packet = JSON.parse(event.data);
-            if (packet.type === 'PANIC_TRIGGER') {
-                document.getElementById('body-root').style.backgroundColor = '#150204';
-                document.getElementById('main-header').className = "flex justify-between items-center border-b border-rose-500/50 pb-4 mb-6 transition-colors";
-                document.getElementById('sub-title').className = "text-[10px] text-rose-500/80 tracking-widest";
-                document.getElementById('main-title').className = "text-3xl font-bold qb-font panic-glow text-rose-500";
-                document.getElementById('sys-status').className = "px-4 py-1.5 text-xs font-bold qb-panel-panic text-rose-400 panic-glow";
-                document.getElementById('sys-status').innerText = "SYS: RED ALERT LOCKDOWN";
-            }
             if (packet.type === 'ALICE_EMIT') {
                 const data = packet.data;
                 const logs = data.photon_logs || [];
-                let siftedCount = logs.filter(p => p.alice_basis === p.bob_basis).length;
+                const actualMessage = data.plaintext || "";
                 
-                document.getElementById('sifted-matches').innerText = `${siftedCount} / ${logs.length}`;
-                document.getElementById('qber-rate').innerText = `${(data.qber * 100).toFixed(2)}%`;
+                let siphonedCount = logs.filter(p => p.eve1_intercepted || p.eve2_intercepted).length;
+                let captureRate = logs.length > 0 ? ((siphonedCount / logs.length) * 100).toFixed(1) : "0.0";
+                
+                document.getElementById('bits-siphoned').innerText = `${siphonedCount} / ${logs.length}`;
+                document.getElementById('capture-rate').innerText = `${captureRate}%`;
+                document.getElementById('capture-status').innerText = "STREAM INTERCEPTED";
 
-                if (data.ciphertext && data.ciphertext !== "REJECTED_BREACH_PANIC_TRIGGERED") {
-                    try {
-                        const rawKey = data.derived_key || "FALLBACK";
-                        const binaryString = atob(data.ciphertext);
-                        let decrypted = "";
-                        for (let i = 0; i < binaryString.length; i++) {
-                            decrypted += String.fromCharCode(binaryString.charCodeAt(i) ^ rawKey.charCodeAt(i % rawKey.length));
-                        }
-                        document.getElementById('decrypted-payload').innerText = decrypted;
-                    } catch (e) {
-                        document.getElementById('decrypted-payload').innerText = data.plaintext || "DECRYPTION ERROR";
-                    }
-                } else {
-                    document.getElementById('decrypted-payload').innerText = "[CRITICAL: BREACH DETECTED - MESSAGE PURGED]";
+                let activeRate = logs.length > 0 ? (siphonedCount / logs.length) : 0;
+                drawSiphonVisual(activeRate);
+
+                let reconstructed = "";
+                for (let i = 0; i < actualMessage.length; i++) {
+                    let logIndex = i % logs.length;
+                    let isCaptured = logs[logIndex] && (logs[logIndex].eve1_intercepted || logs[logIndex].eve2_intercepted);
+                    reconstructed += isCaptured ? actualMessage[i] : "_";
                 }
 
-                drawBobGraph(data.qber);
+                document.getElementById('eve-message-display').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;
 
-                const term = document.getElementById('bobTerminal');
-                term.innerHTML = `<div class="text-cyan-400 font-bold mb-1">[RECEPTION COMPLETE] status: ${data.secure ? 'SECURE' : 'BREACH DETECTED'} (QBER ${(data.qber*100).toFixed(2)}%)</div>`;
-                logs.slice(-25).forEach(p => {
-                    let match = p.alice_basis === p.bob_basis;
-                    term.innerHTML += `<div class="${match ? 'text-cyan-300' : 'text-gray-500'}">• Photon #${p.id}: Alice[${p.alice_basis}] vs Bob[${p.bob_basis}] -> Match: ${match ? 'YES' : 'NO'}</div>`;
-                });
+                const term = document.getElementById('eveTerminal');
+                term.innerHTML += `<div class="text-rose-400">[SIPHON CAPTURE] Siphoned ${siphonedCount} photons. QBER: ${(data.qber * 100).toFixed(1)}%</div>`;
                 term.scrollTop = term.scrollHeight;
+
+                let graphPoints = logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.7 + (Math.random() * 0.2) : 0.1 + (Math.random() * 0.05));
+                drawEveGraph(graphPoints);
             }
         };
     </script>
