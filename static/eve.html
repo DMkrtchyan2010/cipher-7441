@@ -37,6 +37,9 @@
                     <label class="block text-[10px] text-rose-400/70 mb-1">EVE INTERCEPT RATE (NODE 2): <span id="e2-val" class="text-white font-bold">0.00</span></label>
                     <input type="range" id="e2-slider" min="0.0" max="1.0" step="0.05" value="0.00" class="w-full accent-rose-500 bg-black cursor-pointer">
                 </div>
+                <button onclick="injectAttack()" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-black font-bold qb-font text-xs tracking-wider transition-all shadow-[0_0_15px_rgba(255,42,77,0.4)]">
+                    EXECUTE ACTIVE PHOTON PROBE
+                </button>
                 <div class="text-[11px] text-rose-300/80 bg-black/40 p-3 border border-rose-500/20">
                     // Note: Interception collapses photon superposition states, driving up QBER and triggering network breach alerts if threshold (11%) is breached.
                 </div>
@@ -173,6 +176,17 @@
 
         drawEveGraph(Array(64).fill(0.1));
 
+        function injectAttack() {
+            const r1 = parseFloat(e1Slider.value);
+            const r2 = parseFloat(e2Slider.value);
+            ws.send(JSON.stringify({ type: 'EVE_PROBE', intercept_rate_eve1: r1, intercept_rate_eve2: r2 }));
+            
+            const term = document.getElementById('eveTerminal');
+            term.innerHTML += `<div class="text-rose-400">[PROBE INJECTED] Intercept rates updated -> Node 1: ${(r1*100).toFixed(0)}%, Node 2: ${(r2*100).toFixed(0)}%</div>`;
+            term.scrollTop = term.scrollHeight;
+            document.getElementById('capture-status').innerText = "PROBE ACTIVE // SNIFFING...";
+        }
+
         ws.onmessage = (event) => {
             const packet = JSON.parse(event.data);
             if (packet.type === 'ALICE_EMIT') {
@@ -187,12 +201,11 @@
                 document.getElementById('capture-rate').innerText = `${captureRate}%`;
                 document.getElementById('capture-status').innerText = "STREAM INTERCEPTED";
 
-                // Dynamically reconstruct partial message based on actual siphoned bits and real message
                 let reconstructed = "";
                 for (let i = 0; i < actualMessage.length; i++) {
                     let logIndex = i % logs.length;
                     let isCaptured = logs[logIndex] && (logs[logIndex].eve1_intercepted || logs[logIndex].eve2_intercepted);
-                    if (isCaptured || Math.random() < 0.4) { // reveals characters based on interception
+                    if (isCaptured || Math.random() < 0.4) {
                         reconstructed += actualMessage[i];
                     } else {
                         reconstructed += "_";
@@ -201,7 +214,6 @@
 
                 document.getElementById('eve-message-display').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;
 
-                // Log into terminal
                 const term = document.getElementById('eveTerminal');
                 term.innerHTML += `<div class="text-rose-400">[SIPHON CAPTURE] Siphoned ${siphonedCount} photons from stream. QBER: ${(data.qber * 100).toFixed(1)}%</div>`;
                 term.scrollTop = term.scrollHeight;
