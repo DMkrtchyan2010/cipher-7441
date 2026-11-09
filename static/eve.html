@@ -195,17 +195,21 @@
                 const actualMessage = data.plaintext || "";
                 
                 let siphonedCount = logs.filter(p => p.eve1_intercepted || p.eve2_intercepted).length;
-                let captureRate = ((siphonedCount / logs.length) * 100).toFixed(1);
+                let captureRate = logs.length > 0 ? ((siphonedCount / logs.length) * 100).toFixed(1) : "0.0";
                 
                 document.getElementById('bits-siphoned').innerText = `${siphonedCount} / ${logs.length}`;
                 document.getElementById('capture-rate').innerText = `${captureRate}%`;
                 document.getElementById('capture-status').innerText = "STREAM INTERCEPTED";
 
+                // Update circular spectrum visualization dynamically
+                let activeRate = logs.length > 0 ? (siphonedCount / logs.length) : 0;
+                drawSiphonVisual(activeRate);
+
                 let reconstructed = "";
                 for (let i = 0; i < actualMessage.length; i++) {
                     let logIndex = i % logs.length;
                     let isCaptured = logs[logIndex] && (logs[logIndex].eve1_intercepted || logs[logIndex].eve2_intercepted);
-                    if (isCaptured || Math.random() < 0.4) {
+                    if (isCaptured) {
                         reconstructed += actualMessage[i];
                     } else {
                         reconstructed += "_";
@@ -215,10 +219,10 @@
                 document.getElementById('eve-message-display').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;
 
                 const term = document.getElementById('eveTerminal');
-                term.innerHTML += `<div class="text-rose-400">[SIPHON CAPTURE] Siphoned ${siphonedCount} photons from stream. QBER: ${(data.qber * 100).toFixed(1)}%</div>`;
+                term.innerHTML += `<div class="text-rose-400">[SIPHON CAPTURE] Siphoned ${siphonedCount} photons. QBER: ${(data.qber * 100).toFixed(1)}%</div>`;
                 term.scrollTop = term.scrollHeight;
 
-                let graphPoints = logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.7 + Math.random() * 0.2 : 0.05 + Math.random() * 0.05);
+                let graphPoints = logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.7 + (Math.random() * 0.2) : 0.1 + (Math.random() * 0.05));
                 drawEveGraph(graphPoints);
             }
         };
