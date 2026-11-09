@@ -191,13 +191,20 @@
 
         ws.onmessage = (event) => {
             const packet = JSON.parse(event.data);
-            const data = packet.data;
-            if (data && data.photon_logs) {
-                let points = data.photon_logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.9 : 0.15);
-                drawHighResEveGraph(points);
-                updatePartialTextHUD(data.photon_logs);
-                appendObservationTerminal(data.photon_logs);
-            }
+            if (packet.type === 'ALICE_EMIT' || packet.type === 'EVE_INTERCEPT') {
+                const payload = packet.data;
+                const actualMessage = payload.plaintext || ""; // The real message sent by Alice (e.g. "hello")
+                let reconstructed = "";
+                
+                for (let i = 0; i < actualMessage.length; i++) {
+                    if (payload.eve_sifted_mask && payload.eve_sifted_mask[i]) {
+                        reconstructed += actualMessage[i];
+                    } else {
+                        reconstructed += "_"; // Unrecovered noise mask
+                    }
+                }
+                document.getElementById('eve-message-display').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;'
+                    }
         };
 
         async function injectAttack() {
