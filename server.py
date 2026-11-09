@@ -14,7 +14,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global storage for active eavesdropper rates dynamically set by Eve's panel
+# Global storage for active eavesdropper rates set dynamically by Eve's panel
 active_eve_config = {
     "intercept_rate_eve1": 0.00,
     "intercept_rate_eve2": 0.00,
@@ -54,6 +54,7 @@ def run_bb84_simulation(
     if a_basis == "DIAGONAL":
       polarization = "45°" if a_bit == 0 else "135°"
 
+    # If Eve doesn't intercept, Bob matches Alice's basis perfectly (0% baseline QBER)
     b_basis = a_basis if (not eve1_int and not eve2_int) else random.choice(bases)
     b_bit = a_bit
 
@@ -85,7 +86,6 @@ def run_bb84_simulation(
         "error": is_error,
     })
 
-  # Accurate QBER percentage calculation
   qber_ratio = errors / max(1, sifted_matches_count)
   qber_percent = round(qber_ratio * 100, 2)
   secure = qber_percent <= (threshold * 100)
@@ -178,6 +178,7 @@ async def websocket_endpoint(ws: WebSocket):
       data = await ws.receive_text()
       packet = json.loads(data)
 
+      # Update global wiretap rates when Eve adjusts sliders and clicks deploy
       if packet.get("type") == "EVE_PROBE":
         active_eve_config["intercept_rate_eve1"] = packet.get(
             "intercept_rate_eve1", 0.00
@@ -185,19 +186,10 @@ async def websocket_endpoint(ws: WebSocket):
         active_eve_config["intercept_rate_eve2"] = packet.get(
             "intercept_rate_eve2", 0.00
         )
-        logger.info(f"Updated active Eve config: {active_eve_config}")
+        logger.info(f"Updated active Eve config via wiretap: {active_eve_config}")
 
-        sim_res = run_bb84_simulation(
-            num_photons=32,
-            intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
-            intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
-        )
-        sim_res["plaintext"] = packet.get("message", "Monarch Protocol Omega Active")
-
-        broadcast_packet = {"type": "ALICE_EMIT", "data": sim_res}
-        await manager.broadcast(json.dumps(broadcast_packet))
-      else:
-        await manager.broadcast(data)
+      # Broadcast all mesh actions (Alice emissions, Eve rate updates, panic triggers) to all nodes
+      await manager.broadcast(data)
 
   except WebSocketDisconnect:
     manager.disconnect(ws)
