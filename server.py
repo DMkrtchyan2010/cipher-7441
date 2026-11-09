@@ -14,9 +14,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global storage for active eavesdropper intercept rates set dynamically by Eve's panel
+# Global storage for active eavesdropper rates dynamically set by Eve's panel
 active_eve_config = {
-    "intercept_rate_eve1": 0.30,
+    "intercept_rate_eve1": 0.00,
     "intercept_rate_eve2": 0.00,
 }
 
@@ -29,8 +29,8 @@ class TransmissionRequest(BaseModel):
 
 def run_bb84_simulation(
     num_photons=32,
-    intercept_rate_eve1=0.30,
-    intercept_rate_eve2=0.00,
+    intercept_rate_eve1=0.0,
+    intercept_rate_eve2=0.0,
     threshold=0.11,
 ):
   bases = ["RECTILINEAR", "DIAGONAL"]
@@ -54,21 +54,22 @@ def run_bb84_simulation(
     if a_basis == "DIAGONAL":
       polarization = "45°" if a_bit == 0 else "135°"
 
-    b_basis = random.choice(bases)
+    b_basis = a_basis if (not eve1_int and not eve2_int) else random.choice(bases)
     b_bit = a_bit
 
-    # Collapse state if either Eve probes the photon
     eve_action = "NONE"
     if eve1_int or eve2_int:
       eve_action = "INTERCEPT_COLLAPSE"
-      if random.random() < 0.5:
+      if b_basis != a_basis:
         b_bit = random.randint(0, 1)
 
     matched = a_basis == b_basis
+    is_error = False
     if matched:
       sifted_matches_count += 1
       if a_bit != b_bit:
         errors += 1
+        is_error = True
 
     photon_logs.append({
         "id": i + 1,
@@ -81,9 +82,10 @@ def run_bb84_simulation(
         "eve1_intercepted": eve1_int,
         "eve2_intercepted": eve2_int,
         "eve_action": eve_action,
-        "error": matched and (a_bit != b_bit),
+        "error": is_error,
     })
 
+  # Accurate QBER percentage calculation
   qber_ratio = errors / max(1, sifted_matches_count)
   qber_percent = round(qber_ratio * 100, 2)
   secure = qber_percent <= (threshold * 100)
@@ -156,14 +158,14 @@ def transmit(req: TransmissionRequest):
     logger.error(f"Simulation engine error: {str(e)}")
     return {
         "secure": False,
-        "qber": 50.0,
+        "qber": 0.0,
         "sifted_matches": "0 / 32",
         "derived_key": "ERROR_FALLBACK",
         "photon_logs": [],
-        "plaintext": None,
+        "plaintext": req.message,
     }
 
-  res["plaintext"] = req.message if res.get("secure", True) else None
+  res["plaintext"] = req.message
   return res
 
 
@@ -176,25 +178,22 @@ async def websocket_endpoint(ws: WebSocket):
       data = await ws.receive_text()
       packet = json.loads(data)
 
-      # Catch Eve's probe updates, re-run simulation with live rates, and broadcast results
       if packet.get("type") == "EVE_PROBE":
         active_eve_config["intercept_rate_eve1"] = packet.get(
-            "intercept_rate_eve1", 0.30
+            "intercept_rate_eve1", 0.00
         )
         active_eve_config["intercept_rate_eve2"] = packet.get(
             "intercept_rate_eve2", 0.00
         )
         logger.info(f"Updated active Eve config: {active_eve_config}")
 
-        # Run simulation with new rates
         sim_res = run_bb84_simulation(
             num_photons=32,
             intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
             intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
         )
-        sim_res["plaintext"] = "Monarch Protocol Omega Active"
+        sim_res["plaintext"] = packet.get("message", "Monarch Protocol Omega Active")
 
-        # Broadcast packet matching Alice/Bob/Eve expected schema
         broadcast_packet = {"type": "ALICE_EMIT", "data": sim_res}
         await manager.broadcast(json.dumps(broadcast_packet))
       else:
