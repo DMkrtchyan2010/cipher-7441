@@ -76,7 +76,7 @@
             <span class="text-[9px] text-rose-500/70 font-mono">WIRETAP MONITOR</span>
         </div>
         <div id="humanTerminal" class="bg-black/90 p-3 h-36 overflow-y-auto font-mono text-xs text-rose-300/90 space-y-1 border border-rose-500/30">
-            <div class="text-gray-500">// Wiretap armed. Adjust sliders and deploy to instantly trigger live interception analysis...</div>
+            <div class="text-gray-500">// Wiretap armed. Adjust sliders and deploy to instantly trigger interception analysis...</div>
         </div>
     </div>
 
@@ -127,7 +127,7 @@
                 }
             });
 
-            ctx.strokeStyle = '#ff2a4d';
+    ws.strokeStyle = '#ff2a4d';
             ctx.lineWidth = 2;
             ctx.shadowBlur = 8; ctx.shadowColor = '#ff2a4d';
             ctx.beginPath();
@@ -187,7 +187,6 @@
 
         ws.onmessage = (event) => {
             const packet = JSON.parse(event.data);
-            
             if (packet.type === 'ALICE_EMIT') {
                 const data = packet.data;
                 const logs = data.photon_logs || [];
@@ -204,7 +203,6 @@
             const r1 = parseFloat(slider1.value) / 100.0;
             const r2 = parseFloat(slider2.value) / 100.0;
 
-            // Send probe packet; backend will instantly re-run simulation and broadcast results
             ws.send(JSON.stringify({ 
                 type: 'EVE_PROBE', 
                 intercept_rate_eve1: r1, 
