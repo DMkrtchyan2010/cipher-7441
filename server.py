@@ -9,12 +9,13 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+# Mount static directory for HTML frontends
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global storage for active eavesdropper rates set dynamically by Eve's panel
+# Global storage for active eavesdropper intercept rates set via WebSocket from Eve's panel
 active_eve_config = {
     "intercept_rate_eve1": 0.30,
     "intercept_rate_eve2": 0.00,
@@ -27,7 +28,6 @@ class TransmissionRequest(BaseModel):
   message: str
 
 
-# Built-in reliable BB84 simulation engine (avoids external module import mismatches)
 def run_bb84_simulation(
     num_photons=128,
     intercept_rate_eve1=0.0,
@@ -37,19 +37,14 @@ def run_bb84_simulation(
   bases = ["RECTILINEAR", "DIAGONAL"]
   photon_logs = []
   alice_bits = []
-  alice_bases = []
-  bob_bits = []
-  bob_bases = []
-
   errors = 0
 
   for i in range(num_photons):
     a_bit = random.randint(0, 1)
     a_basis = random.choice(bases)
     alice_bits.append(a_bit)
-    alice_bases.append(a_basis)
 
-    # Eve interception simulation
+    # Eve interception check
     eve1_int = random.random() < intercept_rate_eve1
     eve2_int = random.random() < intercept_rate_eve2
 
@@ -59,7 +54,7 @@ def run_bb84_simulation(
     if a_basis == "DIAGONAL":
       polarization = "45°" if a_bit == 0 else "135°"
 
-    # Bob receives
+    # Bob's measurement
     b_basis = random.choice(bases)
     b_bit = a_bit
 
@@ -75,6 +70,8 @@ def run_bb84_simulation(
         "id": i + 1,
         "alice_bit": a_bit,
         "alice_basis": a_basis,
+        "bob_bit": b_bit,
+        "bob_basis": b_basis,
         "polarization": polarization,
         "eve1_intercepted": eve1_int,
         "eve2_intercepted": eve2_int,
@@ -83,8 +80,6 @@ def run_bb84_simulation(
 
   qber = errors / max(1, num_photons)
   secure = qber <= threshold
-
-  # Generate derived key hash / string
   derived_key = (
       "".join([str(b) for b in alice_bits[:32]]) if secure else "BREACH_LOCKED"
   )
@@ -133,6 +128,12 @@ def get_eve():
     return f.read()
 
 
+@app.get("/bob", response_class=HTMLResponse)
+def get_bob():
+  with open("static/bob.html", "r", encoding="utf-8") as f:
+    return f.read()
+
+
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
   try:
@@ -157,7 +158,6 @@ def transmit(req: TransmissionRequest):
     raw_key = res.get("derived_key", "FALLBACK_KEY_7441")
     key_bytes = str(raw_key).encode("utf-8")
     msg_bytes = req.message.encode("utf-8")
-
     encrypted_bytes = bytes(
         [b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(msg_bytes)]
     )
