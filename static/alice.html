@@ -32,24 +32,22 @@
         <div class="lg:col-span-4 space-y-6">
             <div id="panel-config" class="qb-panel p-6 space-y-4">
                 <h2 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">TRANSMISSION PAYLOAD CONFIG</h2>
-                <div id="panel-config" class="qb-panel p-6 space-y-4">
-                    <h2 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">TRANSMISSION PAYLOAD CONFIG</h2>
-                    <div>
-                        <label class="block text-[10px] text-amber-400/70 mb-1">SECRET PAYLOAD MESSAGE:</label>
-                        <input type="text" id="msg" value="Monarch Protocol Omega Active" class="w-full bg-black border border-amber-500/40 p-3 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-amber-400/70 mb-1">PHOTON STREAM DENSITY: <span id="p-val" class="text-white font-bold">128</span></label>
-                        <input type="range" id="p-slider" min="32" max="256" step="32" value="128" class="w-full accent-amber-500 bg-black cursor-pointer">
-                    </div>
-                    <div class="flex items-center space-x-2 pt-1">
-                        <input type="checkbox" id="cinematic-toggle" class="accent-amber-500 w-4 h-4 cursor-pointer">
-                        <label for="cinematic-toggle" class="text-xs text-amber-300 cursor-pointer">ENABLE CINEMATIC STEP ANIMATION</label>
-                    </div>
-                    <button id="transmit-btn" onclick="send()" class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold qb-font text-xs tracking-wider transition-all shadow-[0_0_20px_rgba(242,169,0,0.4)]">
-                        EXECUTE PHOTON STREAM LASER
-                    </button>
+                <div>
+                    <label class="block text-[10px] text-amber-400/70 mb-1">SECRET PAYLOAD MESSAGE:</label>
+                    <input type="text" id="msg" value="Monarch Protocol Omega Active" class="w-full bg-black border border-amber-500/40 p-3 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
                 </div>
+                <div>
+                    <label class="block text-[10px] text-amber-400/70 mb-1">PHOTON STREAM DENSITY: <span id="p-val" class="text-white font-bold">128</span></label>
+                    <input type="range" id="p-slider" min="32" max="256" step="32" value="128" class="w-full accent-amber-500 bg-black cursor-pointer">
+                </div>
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" id="cinematic-toggle" class="accent-amber-500 w-4 h-4 cursor-pointer">
+                    <label for="cinematic-toggle" class="text-xs text-amber-300 cursor-pointer">ENABLE CINEMATIC STEP ANIMATION</label>
+                </div>
+                <button id="transmit-btn" onclick="send()" class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold qb-font text-xs tracking-wider transition-all shadow-[0_0_20px_rgba(242,169,0,0.4)]">
+                    EXECUTE PHOTON STREAM LASER
+                </button>
+            </div>
 
             <div class="qb-panel p-6 space-y-3">
                 <h3 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">QUANTUM SPIN POLARIZATION VISUALIZER</h3>
@@ -205,7 +203,7 @@
 
             const step = (w - 45) / (dataPoints.length || 32);
             dataPoints.forEach((_, idx) => {
-                if (idx % 4 === 0) {
+                if (idx % Math.max(1, Math.floor(dataPoints.length / 8)) === 0) {
                     let x = 40 + idx * step;
                     ctx.fillText(`#${idx+1}`, x - 8, h - 5);
                 }
@@ -225,7 +223,7 @@
             ctx.shadowBlur = 0;
         }
 
-        drawHighResGraph(Array(32).fill(0.5));
+        drawHighResGraph(Array(128).fill(0.5));
 
         function displayHumanTerminal(logs, keyHash) {
             const term = document.getElementById('humanTerminal');
@@ -255,11 +253,10 @@
             document.getElementById('laser-status').innerText = isCinematic ? "CINEMATIC STEP-THROUGH ACTIVE..." : "EMITTING PHOTON STREAM...";
             const numPhotons = parseInt(slider.value);
 
-            // Pre-fetch transmission to know photon behavior for cinematic pulse
             const res = await fetch('/api/transmit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ num_photons: numPhotons, intercept_rate_eve1: 0.3, intercept_rate_eve2: 0.0, threshold: 0.11, message: document.getElementById('msg').value })
+                body: JSON.stringify({ num_photons: numPhotons, intercept_rate_eve1: 0.0, intercept_rate_eve2: 0.0, threshold: 0.11, message: document.getElementById('msg').value })
             });
             const data = await res.json();
 
