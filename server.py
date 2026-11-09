@@ -13,9 +13,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Default Eve-1 to 30% so interception and QBER are immediately active
+# DEFAULT EVE RATES ARE 0.0 SO NO INTERCEPTION MEANS 0% QBER OUT OF THE BOX
 active_eve_config = {
-    "intercept_rate_eve1": 0.30,
+    "intercept_rate_eve1": 0.00,
     "intercept_rate_eve2": 0.00,
 }
 
@@ -34,7 +34,7 @@ class TransmissionRequest(BaseModel):
 
 def run_bb84_simulation(
     num_photons=32,
-    intercept_rate_eve1=0.30,
+    intercept_rate_eve1=0.0,
     intercept_rate_eve2=0.0,
     threshold=0.11,
 ):
@@ -58,7 +58,6 @@ def run_bb84_simulation(
     if a_basis == "DIAGONAL":
       polarization = "45°" if a_bit == 0 else "135°"
 
-    # Bob's choice of basis
     b_basis = random.choice(bases)
     b_bit = a_bit
 
@@ -79,6 +78,7 @@ def run_bb84_simulation(
       else:
         b_bit = a_bit_measured
     else:
+      # CLEAN TRANSMISSION: When Eve is 0%, Bob matches Alice perfectly on sifted bases with 0 errors.
       if b_basis != a_basis:
         b_bit = random.randint(0, 1)
       else:
@@ -193,7 +193,7 @@ async def websocket_endpoint(ws: WebSocket):
       packet = json.loads(data)
       if packet.get("type") == "EVE_PROBE":
         active_eve_config["intercept_rate_eve1"] = packet.get(
-            "intercept_rate_eve1", 0.30
+            "intercept_rate_eve1", 0.00
         )
         active_eve_config["intercept_rate_eve2"] = packet.get(
             "intercept_rate_eve2", 0.00
