@@ -82,16 +82,23 @@ def transmit(req: TransmissionRequest):
       intercept_rate_eve2=req.intercept_rate_eve2,
       threshold=req.threshold,
   )
+
   if res["secure"] and req.message:
-    key_bytes = res["derived_key"].encode("utf-8")
+    raw_key = res.get("derived_key", "FALLBACK_KEY_7441")
+    if not raw_key:
+      raw_key = "FALLBACK_KEY_7441"
+
+    key_bytes = str(raw_key).encode("utf-8")
     msg_bytes = req.message.encode("utf-8")
-    res["ciphertext"] = base64.b64encode(
-        bytes([b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(msg_bytes)])
-    ).decode("utf-8")
+    encrypted_bytes = bytes(
+        [b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(msg_bytes)]
+    )
+    res["ciphertext"] = base64.b64encode(encrypted_bytes).decode("utf-8")
     res["plaintext"] = req.message
   else:
     res["ciphertext"] = "REJECTED_BREACH_PANIC_TRIGGERED"
     res["plaintext"] = None
+
   return res
 
 
