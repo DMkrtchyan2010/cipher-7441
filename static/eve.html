@@ -206,13 +206,12 @@
         async function injectAttack() {
             const r1 = parseFloat(slider1.value) / 100.0;
             const r2 = parseFloat(slider2.value) / 100.0;
-            const res = await fetch('/api/transmit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ num_photons: 32, intercept_rate_eve1: r1, intercept_rate_eve2: r2, threshold: 0.11, message: "Monarch Protocol Omega Active" })
-            });
-            const data = await res.json();
-            ws.send(JSON.stringify({ type: 'EVE_ACTION', data: data }));
+
+            ws.send(JSON.stringify({ 
+                type: 'EVE_PROBE', 
+                intercept_rate_eve1: r1, 
+                intercept_rate_eve2: r2 
+            }));
         }
     </script>
 </body>
