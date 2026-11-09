@@ -13,16 +13,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# DEFAULT EVE RATES ARE 0.0 SO NO INTERCEPTION MEANS 0% QBER OUT OF THE BOX
+# Active global wiretap rates controlled by Eve's panel
 active_eve_config = {
     "intercept_rate_eve1": 0.00,
     "intercept_rate_eve2": 0.00,
-}
-
-last_transmission_state = {
-    "num_photons": 32,
-    "threshold": 0.11,
-    "message": "Monarch Protocol Omega Active",
 }
 
 
@@ -78,7 +72,6 @@ def run_bb84_simulation(
       else:
         b_bit = a_bit_measured
     else:
-      # CLEAN TRANSMISSION: When Eve is 0%, Bob matches Alice perfectly on sifted bases with 0 errors.
       if b_basis != a_basis:
         b_bit = random.randint(0, 1)
       else:
@@ -166,13 +159,7 @@ def get_bob():
 
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
-  global last_transmission_state
-  last_transmission_state = {
-      "num_photons": req.num_photons,
-      "threshold": req.threshold,
-      "message": req.message,
-  }
-
+  # Evaluates strictly using Alice's request payload and active wiretap rates
   res = run_bb84_simulation(
       num_photons=req.num_photons,
       intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
@@ -193,23 +180,13 @@ async def websocket_endpoint(ws: WebSocket):
       packet = json.loads(data)
       if packet.get("type") == "EVE_PROBE":
         active_eve_config["intercept_rate_eve1"] = packet.get(
-            "intercept_rate_eve1", 0.00
+            "intercept_rate_eve1", 0.0
         )
         active_eve_config["intercept_rate_eve2"] = packet.get(
-            "intercept_rate_eve2", 0.00
+            "intercept_rate_eve2", 0.0
         )
 
-        sim_res = run_bb84_simulation(
-            num_photons=last_transmission_state["num_photons"],
-            intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
-            intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
-            threshold=last_transmission_state["threshold"],
-        )
-        sim_res["plaintext"] = last_transmission_state["message"]
-        broadcast_packet = {"type": "ALICE_EMIT", "data": sim_res}
-        await manager.broadcast(json.dumps(broadcast_packet))
-      else:
-        await manager.broadcast(data)
+      await manager.broadcast(data)
   except WebSocketDisconnect:
     manager.disconnect(ws)
   except Exception:
