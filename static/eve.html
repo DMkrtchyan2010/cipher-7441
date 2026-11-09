@@ -42,7 +42,6 @@
                 </button>
             </div>
 
-            <!-- Partial Key & Text Siphon HUD -->
             <div class="qb-panel-breach p-5 space-y-3">
                 <h3 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-1 qb-font">PARTIAL TEXT SIPHON HUD</h3>
                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -80,10 +79,6 @@
             <div class="text-gray-500">// Awaiting photon transit to monitor wiretap success rate...</div>
         </div>
     </div>
-
-    <footer class="text-center text-[10px] text-rose-500/40 border-t border-rose-500/20 pt-3">
-        CIPHER-7441 &copy; 2026 // QUANTUM BREAK PALETTE
-    </footer>
 
     <script>
         const slider1 = document.getElementById('rate1-slider');
@@ -144,7 +139,7 @@
 
         drawHighResEveGraph(Array(32).fill(0.2));
 
-        function updatePartialTextHUD(logs) {
+        function updatePartialTextHUD(logs, activeMessage) {
             const interceptedLogs = logs.filter(p => p.eve1_intercepted || p.eve2_intercepted);
             const total = logs.length;
             const stolenCount = interceptedLogs.length;
@@ -153,15 +148,14 @@
             document.getElementById('stolen-bits-count').innerText = `${stolenCount} / ${total}`;
             document.getElementById('recovery-pct').innerText = `${pct}%`;
 
-            const fullSecret = "Monarch Protocol Omega Active";
+            const fullSecret = activeMessage || "Monarch Protocol Omega Active";
             let reconstructed = "";
             
             for (let i = 0; i < fullSecret.length; i++) {
                 if (i < logs.length) {
                     const p = logs[i];
                     if (p.eve1_intercepted || p.eve2_intercepted) {
-                        const guessedCorrectly = Math.random() < 0.5;
-                        reconstructed += guessedCorrectly ? fullSecret[i] : '•';
+                        reconstructed += fullSecret[i];
                     } else {
                         reconstructed += '_';
                     }
@@ -173,18 +167,17 @@
             if (stolenCount === 0) {
                 document.getElementById('partial-text-box').innerText = "[NO BITS INTERCEPTED]";
             } else {
-                document.getElementById('partial-text-box').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;
+                document.getElementById('partial-text-box').innerText = `"${reconstructed}" (Wiretap Slice Recovered)`;
             }
         }
 
         function appendObservationTerminal(logs) {
             const humanTerm = document.getElementById('humanTerminal');
-            // Clean single header entry per sweep batch
             humanTerm.innerHTML = `<div class="text-rose-400 font-bold mb-1">[WIRETAP SWEEP COMPLETE] Dual Hacker Interception Analyzed</div>`;
             
             logs.forEach(p => {
                 if (p.eve1_intercepted || p.eve2_intercepted) {
-                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted (${p.eve_action}). Siphoned bit successfully.</div>`;
+                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted by Wiretap. Siphoned bit successfully.</div>`;
                 } else {
                     humanTerm.innerHTML += `<div class="text-gray-400">• Photon #${p.id}: Passed clean. Unseen by mesh.</div>`;
                 }
@@ -198,7 +191,7 @@
             if (data && data.photon_logs) {
                 let points = data.photon_logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.9 : 0.15);
                 drawHighResEveGraph(points);
-                updatePartialTextHUD(data.photon_logs);
+                updatePartialTextHUD(data.photon_logs, data.plaintext);
                 appendObservationTerminal(data.photon_logs);
             }
         };
@@ -207,10 +200,12 @@
             const r1 = parseFloat(slider1.value) / 100.0;
             const r2 = parseFloat(slider2.value) / 100.0;
 
+            // Transmit through WebSocket to update global active rates instantly
             ws.send(JSON.stringify({ 
                 type: 'EVE_PROBE', 
                 intercept_rate_eve1: r1, 
-                intercept_rate_eve2: r2 
+                intercept_rate_eve2: r2,
+                message: "Monarch Protocol Omega Active"
             }));
         }
     </script>
