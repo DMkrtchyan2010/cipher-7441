@@ -1,184 +1,192 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Cipher-7441 // Bob Receiver Terminal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Share Tech Mono', monospace; background-color: #050505; color: #f2a900; overflow-x: hidden; transition: background 0.3s; }
-        .qb-font { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; }
-        .qb-panel { background: #0a0a0c; border-left: 3px solid #f2a900; border-top: 1px solid rgba(242, 169, 0, 0.3); border-right: 1px solid rgba(242, 169, 0, 0.3); border-bottom: 1px solid rgba(242, 169, 0, 0.3); box-shadow: inset 0 0 15px rgba(242, 169, 0, 0.05); }
-        .qb-panel-panic { background: #1a0206 !important; border-left: 3px solid #ff2a4d !important; border-color: rgba(255, 42, 77, 0.6) !important; animation: pulsePanic 0.8s infinite alternate; }
-        @keyframes pulsePanic { 0% { box-shadow: inset 0 0 15px rgba(255,42,77,0.2); } 100% { box-shadow: inset 0 0 35px rgba(255,42,77,0.6); } }
-        .qb-glow { text-shadow: 0 0 10px rgba(242, 169, 0, 0.7); }
-        .panic-glow { text-shadow: 0 0 12px rgba(255, 42, 77, 0.9); color: #ff2a4d !important; }
-    </style>
-</head>
-<body id="body-root" class="min-h-screen p-6 max-w-[1600px] mx-auto flex flex-col justify-between">
+import base64
+import json
+import logging
+import random
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-    <header id="main-header" class="flex justify-between items-center border-b border-amber-500/30 pb-4 mb-6 transition-colors">
-        <div>
-            <div id="sub-title" class="text-[10px] text-amber-500/60 tracking-widest">CIPHER-7441 // NODE 02 // RECEIVER COMMAND</div>
-            <h1 id="main-title" class="text-3xl font-bold qb-font qb-glow text-amber-400">BOB // DECRYPTION & SIFTING TERMINAL</h1>
-        </div>
-        <div class="flex items-center space-x-3">
-            <div class="px-3 py-1.5 text-xs font-bold qb-panel text-amber-300">THRESHOLD: 11% MAX</div>
-            <div id="sys-status" class="px-4 py-1.5 text-xs font-bold qb-panel text-amber-300 qb-glow">SYS: ONLINE</div>
-        </div>
-    </header>
+app = FastAPI()
 
-    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-        <div class="lg:col-span-4 space-y-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="qb-panel p-4">
-                    <div class="text-[10px] text-amber-400/70 mb-1">SIFTED MATCHES</div>
-                    <div id="sifted-matches" class="text-lg font-bold text-amber-200">0 / 0</div>
-                </div>
-                <div class="qb-panel p-4">
-                    <div class="text-[10px] text-amber-400/70 mb-1">QBER RATE</div>
-                    <div id="qber-rate" class="text-lg font-bold text-amber-200">0.0%</div>
-                </div>
-            </div>
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-            <div class="qb-panel p-6 space-y-3">
-                <h3 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">DECRYPTED MESSAGE PAYLOAD</h3>
-                <div id="decrypted-payload" class="font-mono text-xs text-amber-200 bg-amber-950/20 p-4 border border-amber-500/40 min-h-[60px] break-all">
-                    [WAITING FOR TRANSMISSION...]
-                </div>
-            </div>
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-            <div class="qb-panel p-6 space-y-2">
-                <h3 class="text-xs font-bold text-amber-400 border-b border-amber-500/20 pb-2 qb-font">RECEIVER OPTICS</h3>
-                <div class="text-[11px] text-amber-300/80 space-y-1">
-                    <div>BEAMSPLITTER: <span class="text-white">50/50 PASSIVE</span></div>
-                    <div>DETECTOR EFF: <span class="text-white">85% SPAD</span></div>
-                    <div>ERROR THRESHOLD: <span class="text-white">11.0%</span></div>
-                </div>
-            </div>
-        </div>
+# Global storage for active eavesdropper intercept rates set via WebSocket from Eve's panel
+active_eve_config = {
+    "intercept_rate_eve1": 0.30,
+    "intercept_rate_eve2": 0.00,
+}
 
-        <div class="lg:col-span-8 space-y-6">
-            <div class="qb-panel p-6 space-y-3">
-                <div class="flex justify-between items-center border-b border-amber-500/20 pb-2">
-                    <h3 class="text-xs font-bold text-amber-400 qb-font">QBER ERROR MONITOR VS 11% THRESHOLD</h3>
-                    <span class="text-[10px] text-amber-500/60 font-mono">HIGH-RES SPECTRUM (%)</span>
-                </div>
-                <div class="bg-black p-3 border border-amber-500/30 relative h-60">
-                    <canvas id="bobGraph" class="w-full h-full"></canvas>
-                </div>
-            </div>
-        </div>
-    </main>
 
-    <div class="qb-panel p-5 mb-6 space-y-2">
-        <div class="flex justify-between items-center border-b border-amber-500/20 pb-1">
-            <h3 class="text-xs font-bold text-amber-400 qb-font">LIVE RECEPTION & SIFTING OBSERVATION TERMINAL</h3>
-            <span class="text-[9px] text-amber-500/70 font-mono">RECEIVER MONITOR</span>
-        </div>
-        <div id="bobTerminal" class="bg-black/90 p-3 h-40 overflow-y-auto font-mono text-xs text-amber-300/90 space-y-1 border border-amber-500/30">
-            <div class="text-gray-500">// Receiver listening on optical fiber mesh...</div>
-        </div>
-    </div>
+class TransmissionRequest(BaseModel):
+  num_photons: int
+  threshold: float = 0.11
+  message: str
 
-    <script>
-        const canvas = document.getElementById('bobGraph');
-        const ctx = canvas.getContext('2d');
-        function resizeGraph() {
-            const w = canvas.parentElement.clientWidth;
-            const h = canvas.parentElement.clientHeight;
-            canvas.width = w * window.devicePixelRatio;
-            canvas.height = h * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        }
-        window.onresize = resizeGraph; resizeGraph();
 
-        function drawBobGraph(qberVal) {
-            const w = canvas.parentElement.clientWidth;
-            const h = canvas.parentElement.clientHeight;
-            ctx.clearRect(0, 0, w, h);
-            
-            ctx.strokeStyle = 'rgba(242, 169, 0, 0.1)';
-            ctx.fillStyle = 'rgba(242, 169, 0, 0.7)';
-            ctx.font = '10px Share Tech Mono';
-            ctx.lineWidth = 1;
+def run_bb84_simulation(
+    num_photons=128,
+    intercept_rate_eve1=0.0,
+    intercept_rate_eve2=0.0,
+    threshold=0.11,
+):
+  bases = ["RECTILINEAR", "DIAGONAL"]
+  photon_logs = []
+  alice_bits = []
+  errors = 0
 
-            for (let yVal = 0.0; yVal <= 0.5; yVal += 0.1) {
-                let y = h - (yVal * 2 * (h - 35)) - 20;
-                ctx.beginPath(); ctx.moveTo(35, y); ctx.lineTo(w, y); ctx.stroke();
-                ctx.fillText(`${(yVal * 100).toFixed(0)}%`, 5, y + 4);
-            }
+  for i in range(num_photons):
+    a_bit = random.randint(0, 1)
+    a_basis = random.choice(bases)
+    alice_bits.append(a_bit)
 
-            let limitY = h - (0.11 * 2 * (h - 35)) - 20;
-            ctx.strokeStyle = '#ff2a4d';
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath(); ctx.moveTo(35, limitY); ctx.lineTo(w, limitY); ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.fillStyle = '#ff2a4d';
-            ctx.fillText("LIMIT 11%", w - 60, limitY - 5);
+    # Eve interception check
+    eve1_int = random.random() < intercept_rate_eve1
+    eve2_int = random.random() < intercept_rate_eve2
 
-            ctx.strokeStyle = '#f2a900';
-            ctx.lineWidth = 2;
-            ctx.shadowBlur = 8; ctx.shadowColor = '#f2a900';
-            ctx.beginPath();
-            
-            let currentY = h - (qberVal * 2 * (h - 35)) - 20;
-            ctx.moveTo(35, currentY);
-            ctx.lineTo(w, currentY);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-        }
+    polarization = (
+        "0°" if a_bit == 0 and a_basis == "RECTILINEAR" else "90°"
+    )
+    if a_basis == "DIAGONAL":
+      polarization = "45°" if a_bit == 0 else "135°"
 
-        drawBobGraph(0.05);
+    # Bob's measurement
+    b_basis = random.choice(bases)
+    b_bit = a_bit
 
-        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const ws = new WebSocket(proto + location.host + '/ws/mesh');
+    if eve1_int or eve2_int:
+      if random.random() < 0.5:
+        b_bit = random.randint(0, 1)
 
-        ws.onmessage = (event) => {
-            const packet = JSON.parse(event.data);
-            if (packet.type === 'PANIC_TRIGGER') {
-                document.getElementById('body-root').style.backgroundColor = '#150204';
-                document.getElementById('main-header').className = "flex justify-between items-center border-b border-rose-500/50 pb-4 mb-6 transition-colors";
-                document.getElementById('sub-title').className = "text-[10px] text-rose-500/80 tracking-widest";
-                document.getElementById('main-title').className = "text-3xl font-bold qb-font panic-glow text-rose-500";
-                document.getElementById('sys-status').className = "px-4 py-1.5 text-xs font-bold qb-panel-panic text-rose-400 panic-glow";
-                document.getElementById('sys-status').innerText = "SYS: RED ALERT LOCKDOWN";
-            }
-            if (packet.type === 'ALICE_EMIT') {
-                const data = packet.data;
-                const logs = data.photon_logs || [];
-                let siftedCount = logs.filter(p => p.alice_basis === p.bob_basis).length;
-                
-                document.getElementById('sifted-matches').innerText = `${siftedCount} / ${logs.length}`;
-                document.getElementById('qber-rate').innerText = `${(data.qber * 100).toFixed(2)}%`;
+    is_error = a_basis == b_basis and a_bit != b_bit
+    if is_error:
+      errors += 1
 
-                if (data.ciphertext && data.ciphertext !== "REJECTED_BREACH_PANIC_TRIGGERED") {
-                    try {
-                        const rawKey = data.derived_key || "FALLBACK";
-                        const binaryString = atob(data.ciphertext);
-                        let decrypted = "";
-                        for (let i = 0; i < binaryString.length; i++) {
-                            decrypted += String.fromCharCode(binaryString.charCodeAt(i) ^ rawKey.charCodeAt(i % rawKey.length));
-                        }
-                        document.getElementById('decrypted-payload').innerText = decrypted;
-                    } catch (e) {
-                        document.getElementById('decrypted-payload').innerText = data.plaintext || "DECRYPTION ERROR";
-                    }
-                } else {
-                    document.getElementById('decrypted-payload').innerText = "[CRITICAL: BREACH DETECTED - MESSAGE PURGED]";
-                }
+    photon_logs.append({
+        "id": i + 1,
+        "alice_bit": a_bit,
+        "alice_basis": a_basis,
+        "bob_bit": b_bit,
+        "bob_basis": b_basis,
+        "polarization": polarization,
+        "eve1_intercepted": eve1_int,
+        "eve2_intercepted": eve2_int,
+        "error": is_error,
+    })
 
-                drawBobGraph(data.qber);
+  qber = errors / max(1, num_photons)
+  secure = qber <= threshold
+  derived_key = (
+      "".join([str(b) for b in alice_bits[:32]]) if secure else "BREACH_LOCKED"
+  )
 
-                const term = document.getElementById('bobTerminal');
-                term.innerHTML = `<div class="text-amber-400 font-bold mb-1">[RECEPTION COMPLETE] status: ${data.secure ? 'SECURE' : 'BREACH DETECTED'} (QBER ${(data.qber*100).toFixed(2)}%)</div>`;
-                logs.slice(-25).forEach(p => {
-                    let match = p.alice_basis === p.bob_basis;
-                    term.innerHTML += `<div class="${match ? 'text-amber-300' : 'text-gray-500'}">• Photon #${p.id}: Alice[${p.alice_basis}] vs Bob[${p.bob_basis}] -> Match: ${match ? 'YES' : 'NO'}</div>`;
-                });
-                term.scrollTop = term.scrollHeight;
-            }
-        };
-    </script>
-</body>
-</html>
+  return {
+      "secure": secure,
+      "qber": qber,
+      "derived_key": derived_key,
+      "photon_logs": photon_logs,
+  }
+
+
+class ConnectionManager:
+
+  def __init__(self):
+    self.active_connections: list[WebSocket] = []
+
+  async def connect(self, websocket: WebSocket):
+    await websocket.accept()
+    self.active_connections.append(websocket)
+
+  def disconnect(self, websocket: WebSocket):
+    if websocket in self.active_connections:
+      self.active_connections.remove(websocket)
+
+  async def broadcast(self, message: str):
+    for connection in self.active_connections:
+      try:
+        await connection.send_text(message)
+      except Exception:
+        pass
+
+
+manager = ConnectionManager()
+
+
+@app.get("/alice", response_class=HTMLResponse)
+def get_alice():
+  with open("static/alice.html", "r", encoding="utf-8") as f:
+    return f.read()
+
+
+@app.get("/eve", response_class=HTMLResponse)
+def get_eve():
+  with open("static/eve.html", "r", encoding="utf-8") as f:
+    return f.read()
+
+
+@app.get("/bob", response_class=HTMLResponse)
+def get_bob():
+  with open("static/bob.html", "r", encoding="utf-8") as f:
+    return f.read()
+
+
+@app.post("/api/transmit")
+def transmit(req: TransmissionRequest):
+  try:
+    res = run_bb84_simulation(
+        num_photons=req.num_photons,
+        intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
+        intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
+        threshold=req.threshold,
+    )
+  except Exception as e:
+    logger.error(f"Simulation engine error: {str(e)}")
+    return {
+        "secure": False,
+        "qber": 0.5,
+        "derived_key": "ERROR_FALLBACK",
+        "photon_logs": [],
+        "ciphertext": "REJECTED_BREACH_PANIC_TRIGGERED",
+        "plaintext": None,
+    }
+
+  if res.get("secure", True) and req.message:
+    raw_key = res.get("derived_key", "FALLBACK_KEY_7441")
+    key_bytes = str(raw_key).encode("utf-8")
+    msg_bytes = req.message.encode("utf-8")
+    encrypted_bytes = bytes(
+        [b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(msg_bytes)]
+    )
+    res["ciphertext"] = base64.b64encode(encrypted_bytes).decode("utf-8")
+    res["plaintext"] = req.message
+  else:
+    res["ciphertext"] = "REJECTED_BREACH_PANIC_TRIGGERED"
+    res["plaintext"] = None
+
+  return res
+
+
+@app.websocket("/ws/mesh")
+@app.websocket("/ws/mesh/")
+async def websocket_endpoint(ws: WebSocket):
+  await manager.connect(ws)
+  try:
+    while True:
+      data = await ws.receive_text()
+      packet = json.loads(data)
+      if packet.get("type") == "EVE_PROBE":
+        active_eve_config["intercept_rate_eve1"] = packet.get(
+            "intercept_rate_eve1", 0.30
+        )
+        active_eve_config["intercept_rate_eve2"] = packet.get(
+            "intercept_rate_eve2", 0.00
+        )
+        logger.info(f"Updated active Eve config: {active_eve_config}")
+      await manager.broadcast(data)
+  except WebSocketDisconnect:
+    manager.disconnect(ws)
+  except Exception:
+    manager.disconnect(ws)
