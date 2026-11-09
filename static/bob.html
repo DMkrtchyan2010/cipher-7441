@@ -6,45 +6,146 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Share Tech Mono', monospace; background-color: #02080d; color: #00f0ff; overflow-x: hidden; }
+        body { font-family: 'Share Tech Mono', monospace; background-color: #02080d; color: #00f0ff; overflow-x: hidden; transition: background 0.3s; }
         .qb-font { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 2px; }
-        .qb-panel { background: #02121a; border-left: 3px solid #00f0ff; border: 1px solid rgba(0, 240, 255, 0.3); box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.08); }
+        .qb-panel { background: #02121a; border-left: 3px solid #00f0ff; border-top: 1px solid rgba(0, 240, 255, 0.3); border-right: 1px solid rgba(0, 240, 255, 0.3); border-bottom: 1px solid rgba(0, 240, 255, 0.3); box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.08); }
+        .qb-panel-panic { background: #1a0206 !important; border-left: 3px solid #ff2a4d !important; border-color: rgba(255, 42, 77, 0.6) !important; animation: pulsePanic 0.8s infinite alternate; }
+        @keyframes pulsePanic { 0% { box-shadow: inset 0 0 15px rgba(255,42,77,0.2); } 100% { box-shadow: inset 0 0 35px rgba(255,42,77,0.6); } }
         .qb-glow { text-shadow: 0 0 10px rgba(0, 240, 255, 0.8); }
+        .panic-glow { text-shadow: 0 0 12px rgba(255, 42, 77, 0.9); color: #ff2a4d !important; }
     </style>
 </head>
-<body class="min-h-screen p-6 max-w-[1600px] mx-auto flex flex-col justify-between">
-    <header class="flex justify-between items-center border-b border-cyan-500/30 pb-4 mb-6">
+<body id="body-root" class="min-h-screen p-6 max-w-[1600px] mx-auto flex flex-col justify-between">
+
+    <header id="main-header" class="flex justify-between items-center border-b border-cyan-500/30 pb-4 mb-6 transition-colors">
         <div>
-            <div class="text-[10px] text-cyan-500/60 tracking-widest">CIPHER-7441 // NODE 02 // RECEIVER COMMAND</div>
-            <h1 class="text-3xl font-bold qb-font qb-glow text-cyan-400">BOB // DECRYPTION & SIFTING TERMINAL</h1>
+            <div id="sub-title" class="text-[10px] text-cyan-500/60 tracking-widest">CIPHER-7441 // NODE 02 // RECEIVER COMMAND</div>
+            <h1 id="main-title" class="text-3xl font-bold qb-font qb-glow text-cyan-400">BOB // DECRYPTION & SIFTING TERMINAL</h1>
         </div>
-        <div id="sys-status" class="px-4 py-1.5 text-xs font-bold qb-panel text-cyan-300 qb-glow">SYS: ONLINE</div>
+        <div class="flex items-center space-x-3">
+            <div class="px-3 py-1.5 text-xs font-bold qb-panel text-cyan-300">THRESHOLD: 11% MAX</div>
+            <div id="sys-status" class="px-4 py-1.5 text-xs font-bold qb-panel text-cyan-300 qb-glow">SYS: ONLINE</div>
+        </div>
     </header>
+
     <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
         <div class="lg:col-span-4 space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="qb-panel p-4">
+                    <div class="text-[10px] text-cyan-400/70 mb-1">SIFTED MATCHES</div>
+                    <div id="sifted-matches" class="text-lg font-bold text-cyan-200">0 / 0</div>
+                </div>
+                <div class="qb-panel p-4">
+                    <div class="text-[10px] text-cyan-400/70 mb-1">QBER RATE</div>
+                    <div id="qber-rate" class="text-lg font-bold text-cyan-200">0.0%</div>
+                </div>
+            </div>
+
             <div class="qb-panel p-6 space-y-3">
-                <h3 class="text-xs font-bold text-cyan-400 qb-font">DECRYPTED MESSAGE PAYLOAD</h3>
-                <div id="decrypted-payload" class="font-mono text-sm text-cyan-200 bg-cyan-950/20 p-3 border border-cyan-500/40 min-h-[50px]">
+                <h3 class="text-xs font-bold text-cyan-400 border-b border-cyan-500/20 pb-2 qb-font">DECRYPTED MESSAGE PAYLOAD</h3>
+                <div id="decrypted-payload" class="font-mono text-xs text-cyan-200 bg-cyan-950/20 p-4 border border-cyan-500/40 min-h-[60px] break-all">
                     [WAITING FOR TRANSMISSION...]
                 </div>
             </div>
+
             <div class="qb-panel p-6 space-y-2">
-                <div class="text-[10px] text-cyan-400">SIFTED MATCHES: <span id="sifted-matches" class="font-bold text-white">0 / 0</span></div>
-                <div class="text-[10px] text-cyan-400">QBER RATE: <span id="qber-rate" class="font-bold text-white">0.0%</span></div>
+                <h3 class="text-xs font-bold text-cyan-400 border-b border-cyan-500/20 pb-2 qb-font">RECEIVER OPTICS</h3>
+                <div class="text-[11px] text-cyan-300/80 space-y-1">
+                    <div>BEAMSPLITTER: <span class="text-white">50/50 PASSIVE</span></div>
+                    <div>DETECTOR EFF: <span class="text-white">85% SPAD</span></div>
+                    <div>ERROR THRESHOLD: <span class="text-white">11.0%</span></div>
+                </div>
             </div>
         </div>
-        <div class="lg:col-span-8 qb-panel p-5 space-y-2">
-            <h3 class="text-xs font-bold text-cyan-400 qb-font">LIVE RECEPTION & SIFTING OBSERVATION TERMINAL</h3>
-            <div id="bobTerminal" class="bg-black/90 p-3 h-64 overflow-y-auto font-mono text-xs text-cyan-300/90 space-y-1 border border-cyan-500/30">
-                <div class="text-gray-500">// Receiver listening on optical fiber mesh...</div>
+
+        <div class="lg:col-span-8 space-y-6">
+            <div class="qb-panel p-6 space-y-3">
+                <div class="flex justify-between items-center border-b border-cyan-500/20 pb-2">
+                    <h3 class="text-xs font-bold text-cyan-400 qb-font">QBER ERROR MONITOR VS 11% THRESHOLD</h3>
+                    <span class="text-[10px] text-cyan-500/60 font-mono">HIGH-RES SPECTRUM (%)</span>
+                </div>
+                <div class="bg-black p-3 border border-cyan-500/30 relative h-60">
+                    <canvas id="bobGraph" class="w-full h-full"></canvas>
+                </div>
             </div>
         </div>
     </main>
+
+    <div class="qb-panel p-5 mb-6 space-y-2">
+        <div class="flex justify-between items-center border-b border-cyan-500/20 pb-1">
+            <h3 class="text-xs font-bold text-cyan-400 qb-font">LIVE RECEPTION & SIFTING OBSERVATION TERMINAL</h3>
+            <span class="text-[9px] text-cyan-500/70 font-mono">RECEIVER MONITOR</span>
+        </div>
+        <div id="bobTerminal" class="bg-black/90 p-3 h-40 overflow-y-auto font-mono text-xs text-cyan-300/90 space-y-1 border border-cyan-500/30">
+            <div class="text-gray-500">// Receiver listening on optical fiber mesh...</div>
+        </div>
+    </div>
+
     <script>
-        const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/mesh');
+        const canvas = document.getElementById('bobGraph');
+        const ctx = canvas.getContext('2d');
+        function resizeGraph() {
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            canvas.width = w * window.devicePixelRatio;
+            canvas.height = h * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.onresize = resizeGraph; resizeGraph();
+
+        function drawBobGraph(qberVal) {
+            const w = canvas.parentElement.clientWidth;
+            const h = canvas.parentElement.clientHeight;
+            ctx.clearRect(0, 0, w, h);
+            
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.1)';
+            ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
+            ctx.font = '10px Share Tech Mono';
+            ctx.lineWidth = 1;
+
+            for (let yVal = 0.0; yVal <= 0.5; yVal += 0.1) {
+                let y = h - (yVal * 2 * (h - 35)) - 20;
+                ctx.beginPath(); ctx.moveTo(35, y); ctx.lineTo(w, y); ctx.stroke();
+                ctx.fillText(`${(yVal * 100).toFixed(0)}%`, 5, y + 4);
+            }
+
+            // Draw 11% threshold limit line
+            let limitY = h - (0.11 * 2 * (h - 35)) - 20;
+            ctx.strokeStyle = '#ff2a4d';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(35, limitY); ctx.lineTo(w, limitY); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#ff2a4d';
+            ctx.fillText("LIMIT 11%", w - 60, limitY - 5);
+
+            // Draw active QBER line
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 8; ctx.shadowColor = '#00f0ff';
+            ctx.beginPath();
+            
+            let currentY = h - (qberVal * 2 * (h - 35)) - 20;
+            ctx.moveTo(35, currentY);
+            ctx.lineTo(w, currentY);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        drawBobGraph(0.05);
+
+        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const ws = new WebSocket(proto + location.host + '/ws/mesh');
 
         ws.onmessage = (event) => {
             const packet = JSON.parse(event.data);
+            if (packet.type === 'PANIC_TRIGGER') {
+                document.getElementById('body-root').style.backgroundColor = '#150204';
+                document.getElementById('main-header').className = "flex justify-between items-center border-b border-rose-500/50 pb-4 mb-6 transition-colors";
+                document.getElementById('sub-title').className = "text-[10px] text-rose-500/80 tracking-widest";
+                document.getElementById('main-title').className = "text-3xl font-bold qb-font panic-glow text-rose-500";
+                document.getElementById('sys-status').className = "px-4 py-1.5 text-xs font-bold qb-panel-panic text-rose-400 panic-glow";
+                document.getElementById('sys-status').innerText = "SYS: RED ALERT LOCKDOWN";
+            }
             if (packet.type === 'ALICE_EMIT') {
                 const data = packet.data;
                 const logs = data.photon_logs || [];
@@ -69,9 +170,11 @@
                     document.getElementById('decrypted-payload').innerText = "[CRITICAL: BREACH DETECTED - MESSAGE PURGED]";
                 }
 
+                drawBobGraph(data.qber);
+
                 const term = document.getElementById('bobTerminal');
-                term.innerHTML = "";
-                logs.slice(-30).forEach(p => {
+                term.innerHTML = `<div class="text-cyan-400 font-bold mb-1">[RECEPTION COMPLETE] status: ${data.secure ? 'SECURE' : 'BREACH DETECTED'} (QBER ${(data.qber*100).toFixed(2)}%)</div>`;
+                logs.slice(-25).forEach(p => {
                     let match = p.alice_basis === p.bob_basis;
                     term.innerHTML += `<div class="${match ? 'text-cyan-300' : 'text-gray-500'}">• Photon #${p.id}: Alice[${p.alice_basis}] vs Bob[${p.bob_basis}] -> Match: ${match ? 'YES' : 'NO'}</div>`;
                 });
