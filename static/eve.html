@@ -30,8 +30,8 @@
             <div class="qb-panel-breach p-6 space-y-4">
                 <h2 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-2 qb-font">DUAL HACKER SAMPLING CONFIG</h2>
                 <div>
-                    <label class="block text-[10px] text-rose-400/70 mb-1">EVE-1 SAMPLING RATE: <span id="rate1-val" class="text-white font-bold">30%</span></label>
-                    <input type="range" id="rate1-slider" min="0" max="100" value="30" class="w-full accent-rose-500 bg-black cursor-pointer">
+                    <label class="block text-[10px] text-rose-400/70 mb-1">EVE-1 SAMPLING RATE: <span id="rate1-val" class="text-white font-bold">0%</span></label>
+                    <input type="range" id="rate1-slider" min="0" max="100" value="0" class="w-full accent-rose-500 bg-black cursor-pointer">
                 </div>
                 <div>
                     <label class="block text-[10px] text-rose-400/70 mb-1">EVE-2 SAMPLING RATE: <span id="rate2-val" class="text-white font-bold">0%</span></label>
@@ -42,6 +42,7 @@
                 </button>
             </div>
 
+            <!-- Partial Key & Text Siphon HUD -->
             <div class="qb-panel-breach p-5 space-y-3">
                 <h3 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-1 qb-font">PARTIAL TEXT SIPHON HUD</h3>
                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -51,7 +52,7 @@
                 <div>
                     <span class="block text-[10px] text-rose-400/70 mb-1">PARTIALLY RECOVERED SECRET MESSAGE SLICE:</span>
                     <div id="partial-text-box" class="bg-black p-3 border border-rose-500/40 text-rose-300 font-bold text-sm tracking-wide overflow-x-auto whitespace-nowrap min-h-[45px] flex items-center">
-                        [NO INTERCEPTION DATA]
+                        [WAITING FOR ALICE TRANSMISSION...]
                     </div>
                 </div>
             </div>
@@ -61,7 +62,7 @@
             <div class="qb-panel-breach p-6 space-y-6">
                 <div class="flex justify-between items-center border-b border-rose-500/20 pb-2">
                     <h3 class="text-xs font-bold text-rose-400 qb-font">LIVE INTERCEPTION QBER SPECTRUM</h3>
-                    <span class="text-[10px] text-rose-500/60 font-mono">STATUS: SCANNING</span>
+                    <span class="text-[10px] text-rose-500/60 font-mono">STATUS: LISTENING</span>
                 </div>
                 <div class="bg-black/90 p-3 border border-rose-500/30 relative h-[380px]">
                     <canvas id="eveGraph" class="w-full h-full"></canvas>
@@ -76,9 +77,13 @@
             <span class="text-[9px] text-rose-500/70 font-mono">WIRETAP MONITOR</span>
         </div>
         <div id="humanTerminal" class="bg-black/90 p-3 h-36 overflow-y-auto font-mono text-xs text-rose-300/90 space-y-1 border border-rose-500/30">
-            <div class="text-gray-500">// Awaiting photon transit to monitor wiretap success rate...</div>
+            <div class="text-gray-500">// Wiretap armed. Adjust sliders and deploy, then wait for Alice to transmit...</div>
         </div>
     </div>
+
+    <footer class="text-center text-[10px] text-rose-500/40 border-t border-rose-500/20 pt-3">
+        CIPHER-7441 &copy; 2026 // QUANTUM BREAK PALETTE
+    </footer>
 
     <script>
         const slider1 = document.getElementById('rate1-slider');
@@ -137,47 +142,44 @@
             ctx.shadowBlur = 0;
         }
 
-        drawHighResEveGraph(Array(32).fill(0.2));
+        drawHighResEveGraph(Array(32).fill(0.1));
 
         function updatePartialTextHUD(logs, activeMessage) {
             const interceptedLogs = logs.filter(p => p.eve1_intercepted || p.eve2_intercepted);
             const total = logs.length;
             const stolenCount = interceptedLogs.length;
-            const pct = ((stolenCount / total) * 100).toFixed(1);
+            const pct = total > 0 ? ((stolenCount / total) * 100).toFixed(1) : "0.0";
 
             document.getElementById('stolen-bits-count').innerText = `${stolenCount} / ${total}`;
             document.getElementById('recovery-pct').innerText = `${pct}%`;
 
-            const fullSecret = activeMessage || "Monarch Protocol Omega Active";
+            const fullSecret = activeMessage || "";
             let reconstructed = "";
             
+            // Dynamically map characters of Alice's actual message against photon logs
             for (let i = 0; i < fullSecret.length; i++) {
-                if (i < logs.length) {
-                    const p = logs[i];
-                    if (p.eve1_intercepted || p.eve2_intercepted) {
-                        reconstructed += fullSecret[i];
-                    } else {
-                        reconstructed += '_';
-                    }
+                let logIndex = i % logs.length;
+                if (logs[logIndex] && (logs[logIndex].eve1_intercepted || logs[logIndex].eve2_intercepted)) {
+                    reconstructed += fullSecret[i];
                 } else {
                     reconstructed += '_';
                 }
             }
 
-            if (stolenCount === 0) {
+            if (stolenCount === 0 || !fullSecret) {
                 document.getElementById('partial-text-box').innerText = "[NO BITS INTERCEPTED]";
             } else {
                 document.getElementById('partial-text-box').innerText = `"${reconstructed}" (Wiretap Slice Recovered)`;
             }
         }
 
-        function appendObservationTerminal(logs) {
+        function appendObservationTerminal(logs, qber) {
             const humanTerm = document.getElementById('humanTerminal');
-            humanTerm.innerHTML = `<div class="text-rose-400 font-bold mb-1">[WIRETAP SWEEP COMPLETE] Dual Hacker Interception Analyzed</div>`;
+            humanTerm.innerHTML = `<div class="text-rose-400 font-bold mb-1">[WIRETAP CAPTURE] Stream Intercepted | QBER: ${qber}%</div>`;
             
             logs.forEach(p => {
                 if (p.eve1_intercepted || p.eve2_intercepted) {
-                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted by Wiretap. Siphoned bit successfully.</div>`;
+                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted by Wiretap (${p.eve_action}). Siphoned bit successfully.</div>`;
                 } else {
                     humanTerm.innerHTML += `<div class="text-gray-400">• Photon #${p.id}: Passed clean. Unseen by mesh.</div>`;
                 }
@@ -187,26 +189,33 @@
 
         ws.onmessage = (event) => {
             const packet = JSON.parse(event.data);
-            const data = packet.data;
-            if (data && data.photon_logs) {
-                let points = data.photon_logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.9 : 0.15);
-                drawHighResEveGraph(points);
-                updatePartialTextHUD(data.photon_logs, data.plaintext);
-                appendObservationTerminal(data.photon_logs);
+            
+            if (packet.type === 'ALICE_EMIT') {
+                const data = packet.data;
+                const logs = data.photon_logs || [];
+                if (logs.length > 0) {
+                    let points = logs.map(p => (p.eve1_intercepted || p.eve2_intercepted) ? 0.9 : 0.15);
+                    drawHighResEveGraph(points);
+                    updatePartialTextHUD(logs, data.plaintext);
+                    appendObservationTerminal(logs, data.qber);
+                }
             }
         };
 
-        async function injectAttack() {
+        function injectAttack() {
             const r1 = parseFloat(slider1.value) / 100.0;
             const r2 = parseFloat(slider2.value) / 100.0;
 
-            // Transmit through WebSocket to update global active rates instantly
+            // Send active wiretap profile configuration via WebSocket to arm backend engine
             ws.send(JSON.stringify({ 
                 type: 'EVE_PROBE', 
                 intercept_rate_eve1: r1, 
-                intercept_rate_eve2: r2,
-                message: "Monarch Protocol Omega Active"
+                intercept_rate_eve2: r2 
             }));
+
+            const term = document.getElementById('humanTerminal');
+            term.innerHTML += `<div class="text-rose-400 font-bold">[WIRETAP ARMED] Rates deployed -> Eve-1: ${slider1.value}%, Eve-2: ${slider2.value}%. Waiting for Alice transmission...</div>`;
+            term.scrollTop = term.scrollHeight;
         }
     </script>
 </body>
