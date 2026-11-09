@@ -1,16 +1,14 @@
 import base64
 import json
 import logging
-import os
+import random
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-# (Import your run_bb84_simulation engine function here)
 
 app = FastAPI()
 
-# Mount static directory for HTML/JS frontends
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +25,76 @@ class TransmissionRequest(BaseModel):
   num_photons: int
   threshold: float = 0.11
   message: str
+
+
+# Built-in reliable BB84 simulation engine (avoids external module import mismatches)
+def run_bb84_simulation(
+    num_photons=128,
+    intercept_rate_eve1=0.0,
+    intercept_rate_eve2=0.0,
+    threshold=0.11,
+):
+  bases = ["RECTILINEAR", "DIAGONAL"]
+  photon_logs = []
+  alice_bits = []
+  alice_bases = []
+  bob_bits = []
+  bob_bases = []
+
+  errors = 0
+
+  for i in range(num_photons):
+    a_bit = random.randint(0, 1)
+    a_basis = random.choice(bases)
+    alice_bits.append(a_bit)
+    alice_bases.append(a_basis)
+
+    # Eve interception simulation
+    eve1_int = random.random() < intercept_rate_eve1
+    eve2_int = random.random() < intercept_rate_eve2
+
+    polarization = (
+        "0°" if a_bit == 0 and a_basis == "RECTILINEAR" else "90°"
+    )
+    if a_basis == "DIAGONAL":
+      polarization = "45°" if a_bit == 0 else "135°"
+
+    # Bob receives
+    b_basis = random.choice(bases)
+    b_bit = a_bit
+
+    if eve1_int or eve2_int:
+      if random.random() < 0.5:
+        b_bit = random.randint(0, 1)
+
+    is_error = a_basis == b_basis and a_bit != b_bit
+    if is_error:
+      errors += 1
+
+    photon_logs.append({
+        "id": i + 1,
+        "alice_bit": a_bit,
+        "alice_basis": a_basis,
+        "polarization": polarization,
+        "eve1_intercepted": eve1_int,
+        "eve2_intercepted": eve2_int,
+        "error": is_error,
+    })
+
+  qber = errors / max(1, num_photons)
+  secure = qber <= threshold
+
+  # Generate derived key hash / string
+  derived_key = (
+      "".join([str(b) for b in alice_bits[:32]]) if secure else "BREACH_LOCKED"
+  )
+
+  return {
+      "secure": secure,
+      "qber": qber,
+      "derived_key": derived_key,
+      "photon_logs": photon_logs,
+  }
 
 
 class ConnectionManager:
@@ -68,7 +136,6 @@ def get_eve():
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
   try:
-    # Call your simulation engine with global active rates
     res = run_bb84_simulation(
         num_photons=req.num_photons,
         intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
@@ -88,9 +155,6 @@ def transmit(req: TransmissionRequest):
 
   if res.get("secure", True) and req.message:
     raw_key = res.get("derived_key", "FALLBACK_KEY_7441")
-    if not raw_key:
-      raw_key = "FALLBACK_KEY_7441"
-
     key_bytes = str(raw_key).encode("utf-8")
     msg_bytes = req.message.encode("utf-8")
 
@@ -104,7 +168,8 @@ def transmit(req: TransmissionRequest):
     res["plaintext"] = None
 
   return res
-    
+
+
 @app.websocket("/ws/mesh")
 @app.websocket("/ws/mesh/")
 async def websocket_endpoint(ws: WebSocket):
@@ -113,7 +178,6 @@ async def websocket_endpoint(ws: WebSocket):
     while True:
       data = await ws.receive_text()
       packet = json.loads(data)
-      # Catch Eve's probe updates and sync global engine rates
       if packet.get("type") == "EVE_PROBE":
         active_eve_config["intercept_rate_eve1"] = packet.get(
             "intercept_rate_eve1", 0.30
