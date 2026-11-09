@@ -73,7 +73,6 @@ async def websocket_endpoint(ws: WebSocket):
     logger.error(f"WebSocket exception: {e}")
     manager.disconnect(ws)
 
-
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
   res = run_bb84_simulation(
@@ -85,11 +84,10 @@ def transmit(req: TransmissionRequest):
 
   if res["secure"] and req.message:
     raw_key = res.get("derived_key", "FALLBACK_KEY_7441")
-    if not raw_key:
-      raw_key = "FALLBACK_KEY_7441"
-
     key_bytes = str(raw_key).encode("utf-8")
-    msg_bytes = req.message.encode("utf-8")
+    msg_bytes = req.message.encode("utf-8")  # Uses the exact current message bytes
+
+    # Strict byte-for-byte XOR encryption matching message length exactly
     encrypted_bytes = bytes(
         [b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(msg_bytes)]
     )
