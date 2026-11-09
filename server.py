@@ -1,120 +1,206 @@
 import base64
+import json
 import logging
-import os
+import random
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from engine import run_bb84_simulation
+
+app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Cipher-7441 Interactive Mesh", version="2.5.0")
+# Global storage for active eavesdropper intercept rates set dynamically by Eve's panel
+active_eve_config = {
+    "intercept_rate_eve1": 0.30,
+    "intercept_rate_eve2": 0.00,
+}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+class TransmissionRequest(BaseModel):
+  num_photons: int
+  threshold: float = 0.11
+  message: str
+
+
+def run_bb84_simulation(
+    num_photons=32,
+    intercept_rate_eve1=0.30,
+    intercept_rate_eve2=0.00,
+    threshold=0.11,
+):
+  bases = ["RECTILINEAR", "DIAGONAL"]
+  photon_logs = []
+  alice_bits = []
+  sifted_matches_count = 0
+  errors = 0
+
+  for i in range(num_photons):
+    a_bit = random.randint(0, 1)
+    a_basis = random.choice(bases)
+    alice_bits.append(a_bit)
+
+    # Eve interception checks based on active wiretap rates
+    eve1_int = random.random() < intercept_rate_eve1
+    eve2_int = random.random() < intercept_rate_eve2
+
+    polarization = (
+        "0°" if a_bit == 0 and a_basis == "RECTILINEAR" else "90°"
+    )
+    if a_basis == "DIAGONAL":
+      polarization = "45°" if a_bit == 0 else "135°"
+
+    b_basis = random.choice(bases)
+    b_bit = a_bit
+
+    # Collapse state if either Eve probes the photon
+    eve_action = "NONE"
+    if eve1_int or eve2_int:
+      eve_action = "INTERCEPT_COLLAPSE"
+      if random.random() < 0.5:
+        b_bit = random.randint(0, 1)
+
+    matched = a_basis == b_basis
+    if matched:
+      sifted_matches_count += 1
+      if a_bit != b_bit:
+        errors += 1
+
+    photon_logs.append({
+        "id": i + 1,
+        "alice_bit": a_bit,
+        "alice_basis": a_basis,
+        "bob_bit": b_bit,
+        "bob_basis": b_basis,
+        "polarization": polarization,
+        "matched": matched,
+        "eve1_intercepted": eve1_int,
+        "eve2_intercepted": eve2_int,
+        "eve_action": eve_action,
+        "error": matched and (a_bit != b_bit),
+    })
+
+  qber_ratio = errors / max(1, sifted_matches_count)
+  qber_percent = round(qber_ratio * 100, 2)
+  secure = qber_percent <= (threshold * 100)
+
+  derived_key = (
+      "".join([str(b) for b in alice_bits[:32]]) if secure else "BREACH_LOCKED"
+  )
+
+  return {
+      "secure": secure,
+      "qber": qber_percent,
+      "sifted_matches": f"{sifted_matches_count} / {num_photons}",
+      "derived_key": derived_key,
+      "photon_logs": photon_logs,
+  }
 
 
 class ConnectionManager:
 
   def __init__(self):
-    self.connections: list[WebSocket] = []
+    self.active_connections: list[WebSocket] = []
 
-  async def connect(self, ws: WebSocket):
-    await ws.accept()
-    self.connections.append(ws)
-    logger.info(f"Client connected. Total active: {len(self.connections)}")
+  async def connect(self, websocket: WebSocket):
+    await websocket.accept()
+    self.active_connections.append(websocket)
 
-  def disconnect(self, ws: WebSocket):
-    if ws in self.connections:
-      self.connections.remove(ws)
-      logger.info(f"Client disconnected. Total active: {len(self.connections)}")
+  def disconnect(self, websocket: WebSocket):
+    if websocket in self.active_connections:
+      self.active_connections.remove(websocket)
 
-  async def broadcast(self, msg: str):
-    for conn in self.connections:
+  async def broadcast(self, message: str):
+    for connection in self.active_connections:
       try:
-        await conn.send_text(msg)
-      except Exception as e:
-        logger.error(f"Broadcast error: {e}")
+        await connection.send_text(message)
+      except Exception:
+        pass
 
 
 manager = ConnectionManager()
 
 
-class TransmissionRequest(BaseModel):
-  num_photons: int = 32
-  intercept_rate_eve1: float = 0.0
-  intercept_rate_eve2: float = 0.0
-  threshold: float = 0.11
-  message: str = ""
+@app.get("/alice", response_class=HTMLResponse)
+def get_alice():
+  with open("static/alice.html", "r", encoding="utf-8") as f:
+    return f.read()
 
 
-# WebSocket Endpoint supporting exact paths and trailing slashes
-@app.websocket("/ws/mesh")
-@app.websocket("/ws/mesh/")
-async def websocket_endpoint(ws: WebSocket):
-  logger.info("Incoming WebSocket connection handshake at /ws/mesh")
-  await manager.connect(ws)
-  try:
-    while True:
-      data = await ws.receive_text()
-      await manager.broadcast(data)
-  except WebSocketDisconnect:
-    logger.info("WebSocket client disconnected normally")
-    manager.disconnect(ws)
-  except Exception as e:
-    logger.error(f"WebSocket exception: {e}")
-    manager.disconnect(ws)
+@app.get("/eve", response_class=HTMLResponse)
+def get_eve():
+  with open("static/eve.html", "r", encoding="utf-8") as f:
+    return f.read()
+
+
+@app.get("/bob", response_class=HTMLResponse)
+def get_bob():
+  with open("static/bob.html", "r", encoding="utf-8") as f:
+    return f.read()
 
 
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
-  res = run_bb84_simulation(
-      num_photons=req.num_photons,
-      intercept_rate_eve1=req.intercept_rate_eve1,
-      intercept_rate_eve2=req.intercept_rate_eve2,
-      threshold=req.threshold,
-  )
-  if res["secure"] and req.message:
-    key_bytes = res["derived_key"].encode("utf-8")
-    msg_bytes = req.message.encode("utf-8")
-    res["ciphertext"] = base64.b64encode(
-        bytes([b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(msg_bytes)])
-    ).decode("utf-8")
-    res["plaintext"] = req.message
-  else:
-    res["ciphertext"] = "REJECTED_BREACH_PANIC_TRIGGERED"
-    res["plaintext"] = None
+  try:
+    res = run_bb84_simulation(
+        num_photons=req.num_photons,
+        intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
+        intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
+        threshold=req.threshold,
+    )
+  except Exception as e:
+    logger.error(f"Simulation engine error: {str(e)}")
+    return {
+        "secure": False,
+        "qber": 50.0,
+        "sifted_matches": "0 / 32",
+        "derived_key": "ERROR_FALLBACK",
+        "photon_logs": [],
+        "plaintext": None,
+    }
+
+  res["plaintext"] = req.message if res.get("secure", True) else None
   return res
 
 
-@app.get("/")
-def read_root():
-  return FileResponse(os.path.join("static", "index.html"))
+@app.websocket("/ws/mesh")
+@app.websocket("/ws/mesh/")
+async def websocket_endpoint(ws: WebSocket):
+  await manager.connect(ws)
+  try:
+    while True:
+      data = await ws.receive_text()
+      packet = json.loads(data)
 
+      # Catch Eve's probe updates, re-run simulation with live rates, and broadcast results
+      if packet.get("type") == "EVE_PROBE":
+        active_eve_config["intercept_rate_eve1"] = packet.get(
+            "intercept_rate_eve1", 0.30
+        )
+        active_eve_config["intercept_rate_eve2"] = packet.get(
+            "intercept_rate_eve2", 0.00
+        )
+        logger.info(f"Updated active Eve config: {active_eve_config}")
 
-# Explicit route helpers for individual node views if accessed directly
-@app.get("/alice.html")
-def read_alice():
-  return FileResponse(os.path.join("static", "alice.html"))
+        # Run simulation with new rates
+        sim_res = run_bb84_simulation(
+            num_photons=32,
+            intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
+            intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
+        )
+        sim_res["plaintext"] = "Monarch Protocol Omega Active"
 
+        # Broadcast packet matching Alice/Bob/Eve expected schema
+        broadcast_packet = {"type": "ALICE_EMIT", "data": sim_res}
+        await manager.broadcast(json.dumps(broadcast_packet))
+      else:
+        await manager.broadcast(data)
 
-@app.get("/bob.html")
-def read_bob():
-  return FileResponse(os.path.join("static", "bob.html"))
-
-
-@app.get("/eve.html")
-def read_eve():
-  return FileResponse(os.path.join("static", "eve.html"))
-
-
-# Mount static assets LAST so explicit API/WebSocket routes take priority
-app.mount("/static", StaticFiles(directory="static"), name="static")
+  except WebSocketDisconnect:
+    manager.disconnect(ws)
+  except Exception:
+    manager.disconnect(ws)
