@@ -37,8 +37,8 @@
                     <input type="text" id="msg" value="Monarch Protocol Omega Active" class="w-full bg-black border border-amber-500/40 p-3 text-xs text-amber-200 focus:outline-none focus:border-amber-400">
                 </div>
                 <div>
-                    <label class="block text-[10px] text-amber-400/70 mb-1">PHOTON STREAM DENSITY: <span id="p-val" class="text-white font-bold">128</span></label>
-                    <input type="range" id="p-slider" min="32" max="256" step="32" value="128" class="w-full accent-amber-500 bg-black cursor-pointer">
+                    <label class="block text-[10px] text-amber-400/70 mb-1">PHOTON STREAM DENSITY: <span id="p-val" class="text-white font-bold">32</span></label>
+                    <input type="range" id="p-slider" min="32" max="256" step="32" value="32" class="w-full accent-amber-500 bg-black cursor-pointer">
                 </div>
                 <div class="flex items-center space-x-2 pt-1">
                     <input type="checkbox" id="cinematic-toggle" class="accent-amber-500 w-4 h-4 cursor-pointer">
@@ -223,7 +223,7 @@
             ctx.shadowBlur = 0;
         }
 
-        drawHighResGraph(Array(128).fill(0.5));
+        drawHighResGraph(Array(32).fill(0.5));
 
         function displayHumanTerminal(logs, keyHash) {
             const term = document.getElementById('humanTerminal');
@@ -233,6 +233,16 @@
                 term.innerHTML += `<div class="${colorClass}">• Photon #${p.id}: Bit ${p.alice_bit} sent in [${p.alice_basis}-basis | ${p.polarization}] -> Eve Intercepted: ${p.eve1_intercepted || p.eve2_intercepted ? 'YES' : 'NO'}</div>`;
             });
             term.scrollTop = term.scrollHeight;
+        }
+
+        function resetToNormalState() {
+            document.getElementById('body-root').style.backgroundColor = '#050505';
+            document.getElementById('main-header').className = "flex justify-between items-center border-b border-amber-500/30 pb-4 mb-6 transition-colors";
+            document.getElementById('sub-title').className = "text-[10px] text-amber-500/60 tracking-widest";
+            document.getElementById('main-title').className = "text-3xl font-bold qb-font qb-glow text-amber-400";
+            document.getElementById('sys-status').className = "px-4 py-1.5 text-xs font-bold qb-panel text-amber-300 qb-glow";
+            document.getElementById('sys-status').innerText = "SYS: ONLINE";
+            document.getElementById('panel-config').className = "qb-panel p-6 space-y-4";
         }
 
         ws.onmessage = (event) => {
@@ -245,6 +255,8 @@
                 document.getElementById('sys-status').className = "px-4 py-1.5 text-xs font-bold qb-panel-panic text-rose-400 panic-glow";
                 document.getElementById('sys-status').innerText = "ALERT: BREACH LOCKDOWN";
                 document.getElementById('panel-config').className = "qb-panel-panic p-6 space-y-4";
+            } else if (packet.type === 'RESET_STATE') {
+                resetToNormalState();
             }
         };
 
@@ -256,7 +268,11 @@
             const res = await fetch('/api/transmit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ num_photons: numPhotons, intercept_rate_eve1: 0.0, intercept_rate_eve2: 0.0, threshold: 0.11, message: document.getElementById('msg').value })
+                body: JSON.stringify({ 
+                    num_photons: numPhotons, 
+                    threshold: 0.11, 
+                    message: document.getElementById('msg').value 
+                })
             });
             const data = await res.json();
 
@@ -269,7 +285,10 @@
                 displayHumanTerminal(data.photon_logs, data.derived_key);
                 document.getElementById('laser-status').innerText = "COMPLETE";
                 
-                if (!data.secure) {
+                if (data.secure) {
+                    resetToNormalState();
+                    ws.send(JSON.stringify({ type: 'RESET_STATE' }));
+                } else {
                     ws.send(JSON.stringify({ type: 'PANIC_TRIGGER' }));
                 }
             });
