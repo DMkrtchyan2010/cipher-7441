@@ -201,6 +201,7 @@
                 document.getElementById('capture-rate').innerText = `${captureRate}%`;
                 document.getElementById('capture-status').innerText = "STREAM INTERCEPTED";
 
+                // Update circular spectrum visualization dynamically
                 let activeRate = logs.length > 0 ? (siphonedCount / logs.length) : 0;
                 drawSiphonVisual(activeRate);
 
@@ -208,7 +209,11 @@
                 for (let i = 0; i < actualMessage.length; i++) {
                     let logIndex = i % logs.length;
                     let isCaptured = logs[logIndex] && (logs[logIndex].eve1_intercepted || logs[logIndex].eve2_intercepted);
-                    reconstructed += isCaptured ? actualMessage[i] : "_";
+                    if (isCaptured) {
+                        reconstructed += actualMessage[i];
+                    } else {
+                        reconstructed += "_";
+                    }
                 }
 
                 document.getElementById('eve-message-display').innerText = `"${reconstructed}" (Quantum Noise Scrambled)`;
