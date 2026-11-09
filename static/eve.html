@@ -42,7 +42,6 @@
                 </button>
             </div>
 
-            <!-- Partial Key & Text Siphon HUD -->
             <div class="qb-panel-breach p-5 space-y-3">
                 <h3 class="text-xs font-bold text-rose-400 border-b border-rose-500/20 pb-1 qb-font">PARTIAL TEXT SIPHON HUD</h3>
                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -77,7 +76,7 @@
             <span class="text-[9px] text-rose-500/70 font-mono">WIRETAP MONITOR</span>
         </div>
         <div id="humanTerminal" class="bg-black/90 p-3 h-36 overflow-y-auto font-mono text-xs text-rose-300/90 space-y-1 border border-rose-500/30">
-            <div class="text-gray-500">// Wiretap armed. Adjust sliders and deploy, then wait for Alice to transmit...</div>
+            <div class="text-gray-500">// Wiretap armed. Adjust sliders and deploy to instantly trigger live interception analysis...</div>
         </div>
     </div>
 
@@ -156,7 +155,6 @@
             const fullSecret = activeMessage || "";
             let reconstructed = "";
             
-            // Dynamically map characters of Alice's actual message against photon logs
             for (let i = 0; i < fullSecret.length; i++) {
                 let logIndex = i % logs.length;
                 if (logs[logIndex] && (logs[logIndex].eve1_intercepted || logs[logIndex].eve2_intercepted)) {
@@ -179,7 +177,7 @@
             
             logs.forEach(p => {
                 if (p.eve1_intercepted || p.eve2_intercepted) {
-                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted by Wiretap (${p.eve_action}). Siphoned bit successfully.</div>`;
+                    humanTerm.innerHTML += `<div class="text-rose-300">• Photon #${p.id}: Intercepted by Wiretap. Siphoned bit successfully.</div>`;
                 } else {
                     humanTerm.innerHTML += `<div class="text-gray-400">• Photon #${p.id}: Passed clean. Unseen by mesh.</div>`;
                 }
@@ -206,7 +204,7 @@
             const r1 = parseFloat(slider1.value) / 100.0;
             const r2 = parseFloat(slider2.value) / 100.0;
 
-            // Send active wiretap profile configuration via WebSocket to arm backend engine
+            // Send probe packet; backend will instantly re-run simulation and broadcast results
             ws.send(JSON.stringify({ 
                 type: 'EVE_PROBE', 
                 intercept_rate_eve1: r1, 
@@ -214,7 +212,7 @@
             }));
 
             const term = document.getElementById('humanTerminal');
-            term.innerHTML += `<div class="text-rose-400 font-bold">[WIRETAP ARMED] Rates deployed -> Eve-1: ${slider1.value}%, Eve-2: ${slider2.value}%. Waiting for Alice transmission...</div>`;
+            term.innerHTML += `<div class="text-rose-400 font-bold">[WIRETAP DEPLOYED] Rates updated -> Eve-1: ${slider1.value}%, Eve-2: ${slider2.value}%. Mesh recalculated instantly!</div>`;
             term.scrollTop = term.scrollHeight;
         }
     </script>
