@@ -67,15 +67,26 @@ def get_eve():
 
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
-  # Uses the live intercept rates configured by Eve via WebSocket
-  res = run_bb84_simulation(
-      num_photons=req.num_photons,
-      intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
-      intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
-      threshold=req.threshold,
-  )
+  try:
+    # Call your simulation engine with global active rates
+    res = run_bb84_simulation(
+        num_photons=req.num_photons,
+        intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
+        intercept_rate_eve2=active_eve_config["intercept_rate_eve2"],
+        threshold=req.threshold,
+    )
+  except Exception as e:
+    logger.error(f"Simulation engine error: {str(e)}")
+    return {
+        "secure": False,
+        "qber": 0.5,
+        "derived_key": "ERROR_FALLBACK",
+        "photon_logs": [],
+        "ciphertext": "REJECTED_BREACH_PANIC_TRIGGERED",
+        "plaintext": None,
+    }
 
-  if res["secure"] and req.message:
+  if res.get("secure", True) and req.message:
     raw_key = res.get("derived_key", "FALLBACK_KEY_7441")
     if not raw_key:
       raw_key = "FALLBACK_KEY_7441"
@@ -93,8 +104,7 @@ def transmit(req: TransmissionRequest):
     res["plaintext"] = None
 
   return res
-
-
+    
 @app.websocket("/ws/mesh")
 @app.websocket("/ws/mesh/")
 async def websocket_endpoint(ws: WebSocket):
