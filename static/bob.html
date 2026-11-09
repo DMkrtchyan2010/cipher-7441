@@ -87,7 +87,8 @@
     </footer>
 
     <script>
-        const ws = new WebSocket('ws://' + location.host + '/ws/mesh');
+        const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const ws = new WebSocket(proto + location.host + '/ws/mesh');
 
         const canvas = document.getElementById('bobGraph');
         const ctx = canvas.getContext('2d');
