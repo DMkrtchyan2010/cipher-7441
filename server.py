@@ -159,7 +159,6 @@ def get_bob():
 
 @app.post("/api/transmit")
 def transmit(req: TransmissionRequest):
-  # Evaluates strictly using Alice's request payload and active wiretap rates
   res = run_bb84_simulation(
       num_photons=req.num_photons,
       intercept_rate_eve1=active_eve_config["intercept_rate_eve1"],
